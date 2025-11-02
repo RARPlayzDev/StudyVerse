@@ -22,8 +22,8 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
 
     if (isAuthCheckComplete) {
       if (!user) {
-        // Not logged in, redirect to login
-        router.push('/login');
+        // Not logged in, redirect to admin login
+        router.push('/admin/login');
       } else if (!adminRole) {
         // Logged in but not an admin, redirect to student dashboard
         router.push('/dashboard');

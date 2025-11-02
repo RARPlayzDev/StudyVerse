@@ -41,11 +41,11 @@ export default function AdminSidebar() {
 
   const handleLogout = async () => {
       await auth.signOut();
-      router.push('/login');
+      router.push('/admin/login');
   }
 
   const renderNavItem = (item: { href: string; icon: React.ElementType; label: string }) => {
-    const isActive = pathname === item.href;
+    const isActive = pathname.startsWith(item.href) && (item.href !== '/admin' || pathname === '/admin');
     const Icon = item.icon;
     return (
       <Tooltip key={item.href}>
