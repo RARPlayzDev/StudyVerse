@@ -4,7 +4,6 @@ import PageTitle from "@/components/common/page-title";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { placeholderNotes } from "@/lib/placeholder-data";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BrainCircuit, Download, FileText, Search, Upload } from "lucide-react";
 import NoteSummaryDialog from "@/components/notes/note-summary-dialog";
@@ -16,12 +15,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useFirestore, useCollection, useUser, useMemoFirebase } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
+import { format } from 'date-fns';
 
 const NOTE_DUMMY_CONTENT = "Quantum mechanics is a fundamental theory in physics that provides a description of the physical properties of nature at the scale of atoms and subatomic particles. It is the foundation of all quantum physics including quantum chemistry, quantum field theory, quantum technology, and quantum information science. Classical physics, the description of physics that existed before the theory of relativity and quantum mechanics, describes nature at ordinary (macroscopic) scale. Most theories in classical physics can be derived from quantum mechanics as an approximation valid at large (macroscopic) scale.";
 
 export default function NotesPage() {
     const [selectedNote, setSelectedNote] = useState<Note | null>(null);
     const [isSummaryOpen, setSummaryOpen] = useState(false);
+    const { user } = useUser();
+    const firestore = useFirestore();
+
+    const notesQuery = useMemoFirebase(() => {
+        if (!user) return null;
+        // This creates a query to get all notes.
+        // In a real app, you might want to query a shared 'notes' collection.
+        // For now, we'll assume notes are user-specific for simplicity.
+        return collection(firestore, 'users', user.uid, 'notes');
+    }, [firestore, user]);
+
+    const { data: notes, isLoading } = useCollection<Note>(notesQuery);
 
     const handleSummaryClick = (note: Note) => {
         setSelectedNote(note);
@@ -73,7 +87,23 @@ export default function NotesPage() {
         </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {placeholderNotes.map(note => (
+          {isLoading && Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="bg-card/50 backdrop-blur-sm border-border/50 flex flex-col">
+               <CardContent className="p-4 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-muted rounded"></div>
+                    <div className="w-3/4 h-8 bg-muted rounded"></div>
+                  </div>
+                  <div className="w-full h-4 bg-muted rounded"></div>
+                  <div className="w-1/2 h-4 bg-muted rounded"></div>
+               </CardContent>
+               <div className="p-4 pt-0 flex gap-2">
+                  <div className="w-1/2 h-9 bg-muted rounded"></div>
+                  <div className="w-1/2 h-9 bg-muted rounded"></div>
+               </div>
+            </Card>
+          ))}
+          {notes?.map(note => (
             <Card key={note.id} className="bg-card/50 backdrop-blur-sm border-border/50 flex flex-col">
               <CardContent className="p-4 flex-grow">
                 <div className="flex items-center gap-3 mb-3">
@@ -85,10 +115,10 @@ export default function NotesPage() {
                 </div>
                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-4">
                   <Avatar className="h-6 w-6">
-                    <AvatarImage src={note.uploaderAvatar} data-ai-hint="woman portrait" />
+                    <AvatarImage src={'https://picsum.photos/seed/user-placeholder/100/100'} data-ai-hint="woman portrait" />
                     <AvatarFallback>{note.uploader.charAt(0)}</AvatarFallback>
                   </Avatar>
-                  <span>{note.uploader} &bull; {note.date}</span>
+                  <span>{note.uploader} &bull; {note.date ? format(note.date.toDate(), 'MMM d, yyyy') : 'No date'}</span>
                 </div>
                 <p className="text-sm text-muted-foreground line-clamp-3">
                   {NOTE_DUMMY_CONTENT.substring(0,100)}...
@@ -108,6 +138,15 @@ export default function NotesPage() {
           ))}
         </div>
         
+        {notes?.length === 0 && !isLoading && (
+          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+            <CardContent className="p-10 text-center text-muted-foreground">
+              <p>No notes found in your hub.</p>
+              <Button variant="link" className="text-accent">Upload your first note</Button>
+            </CardContent>
+          </Card>
+        )}
+
         {selectedNote && (
             <NoteSummaryDialog 
                 open={isSummaryOpen} 

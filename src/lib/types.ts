@@ -1,3 +1,5 @@
+import { Timestamp } from "firebase/firestore";
+
 export type User = {
   id: string;
   name: string;
@@ -20,11 +22,11 @@ export type Task = {
 
 export type Note = {
   id: string;
+  userId: string;
   title: string;
   subject: string;
   uploader: string;
-  uploaderAvatar: string;
-  date: string;
+  date: Timestamp;
   downloads: number;
   fileUrl: string;
   fileType: 'pdf' | 'md' | 'txt';
@@ -47,7 +49,7 @@ export type CollabRoom = {
 };
 
 export type Message = {
-  id: string;
+  id:string;
   sender: string;
   senderAvatar: string;
   text: string;
