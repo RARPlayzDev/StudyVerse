@@ -43,7 +43,10 @@ export default function ChatInterface({ messages, onSendMessage, isLoading }: Ch
             return formatDistanceToNow(timestamp.toDate(), { addSuffix: true });
         }
         // It's likely a JS Date object.
-        return formatDistanceToNow(timestamp, { addSuffix: true });
+        if (timestamp instanceof Date) {
+            return formatDistanceToNow(timestamp, { addSuffix: true });
+        }
+        return 'just now';
     }
 
     return (
@@ -75,13 +78,16 @@ export default function ChatInterface({ messages, onSendMessage, isLoading }: Ch
                     </div>
                 ))}
                 {isLoading && (
-                    <div className="flex items-start gap-4">
+                    <div className="flex items-start gap-3">
                          <Avatar className="h-8 w-8">
-                            <AvatarImage src="#" alt="AI Mentor" />
+                            <AvatarImage src="https://picsum.photos/seed/ai-mentor/100/100" alt="AI Mentor" data-ai-hint="abstract geometric"/>
                             <AvatarFallback>AI</AvatarFallback>
                         </Avatar>
-                        <div className="p-3 rounded-lg bg-card/80">
-                            <p className="text-sm text-foreground animate-pulse">...</p>
+                        <div className="grid gap-1">
+                            <div className="font-semibold text-sm">AI Mentor</div>
+                            <div className="p-3 rounded-lg bg-card/80">
+                                <p className="text-sm text-foreground animate-pulse">...</p>
+                            </div>
                         </div>
                     </div>
                 )}
