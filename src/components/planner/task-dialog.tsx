@@ -1,5 +1,4 @@
 'use client';
-import * as React from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,12 +11,9 @@ import { CalendarIcon } from 'lucide-react';
 import { Calendar } from '../ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { cn } from '@/lib/utils';
-import { format, parseISO } from 'date-fns';
-import { useFirestore, useUser } from '@/firebase';
-import { collection, addDoc, updateDoc, doc } from 'firebase/firestore';
+import { format } from 'date-fns';
 import type { Task } from '@/lib/types';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useEffect } from 'react';
 
 const taskFormSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters.'),
@@ -32,91 +28,50 @@ interface TaskDialogProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
   task?: Task | null;
+  onSave: (data: Omit<Task, 'id' | 'status'> & { id?: string }) => void;
 }
 
-export function TaskDialog({ isOpen, setIsOpen, task }: TaskDialogProps) {
-  const { user } = useUser();
-  const firestore = useFirestore();
-
+export function TaskDialog({ isOpen, setIsOpen, task, onSave }: TaskDialogProps) {
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
     defaultValues: {
-      title: task?.title || '',
-      subject: task?.subject || '',
-      dueDate: task?.dueDate ? new Date(task.dueDate) : new Date(),
-      priority: task?.priority || 'medium',
+      title: '',
+      subject: '',
+      dueDate: new Date(),
+      priority: 'medium',
     },
   });
-
-  const resetForm = (taskData?: Task | null) => {
-    form.reset({
-        title: taskData?.title || '',
-        subject: taskData?.subject || '',
-        dueDate: taskData?.dueDate ? new Date(taskData.dueDate) : new Date(),
-        priority: taskData?.priority || 'medium',
-    })
-  }
-
-  const handleOpenChange = (open: boolean) => {
-      setIsOpen(open);
-      if(!open) {
-          resetForm(null);
-      }
-  }
-
-  // When the task prop changes (i.e., when opening the dialog for a new or existing task),
-  // reset the form with the new task data.
-  React.useEffect(() => {
-    resetForm(task);
-  }, [task, isOpen]);
+  
+  useEffect(() => {
+    if (task) {
+        form.reset({
+            title: task.title,
+            subject: task.subject,
+            dueDate: new Date(task.dueDate),
+            priority: task.priority,
+        });
+    } else {
+        form.reset({
+            title: '',
+            subject: '',
+            dueDate: new Date(),
+            priority: 'medium',
+        });
+    }
+  }, [task, form, isOpen]);
 
 
   const onSubmit = (values: TaskFormValues) => {
-    if (!user) return;
-    
-    const taskData = {
+    onSave({
+        id: task?.id,
         ...values,
-        dueDate: values.dueDate.toISOString(),
-        userId: user.uid,
-    };
-
-    if (task) {
-      // Update existing task
-      const taskRef = doc(firestore, 'users', user.uid, 'tasks', task.id);
-      const updatePayload = {
-          ...taskData,
-      }
-      updateDoc(taskRef, updatePayload)
-        .catch(serverError => {
-            const permissionError = new FirestorePermissionError({
-                path: taskRef.path,
-                operation: 'update',
-                requestResourceData: updatePayload,
-            });
-            errorEmitter.emit('permission-error', permissionError);
-        });
-    } else {
-      // Add new task
-      const collectionRef = collection(firestore, 'users', user.uid, 'tasks');
-      const addPayload = {
-          ...taskData,
-          status: 'todo' as const,
-      }
-      addDoc(collectionRef, addPayload)
-        .catch(serverError => {
-            const permissionError = new FirestorePermissionError({
-                path: collectionRef.path,
-                operation: 'create',
-                requestResourceData: addPayload,
-            });
-            errorEmitter.emit('permission-error', permissionError);
-        });
-    }
-    handleOpenChange(false);
+        dueDate: values.dueDate.toISOString().split('T')[0],
+    });
+    setIsOpen(false);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-[425px] bg-slate-900/80 backdrop-blur-md border-slate-700">
         <DialogHeader>
           <DialogTitle>{task ? 'Edit Task' : 'Add New Task'}</DialogTitle>
@@ -209,7 +164,7 @@ export function TaskDialog({ isOpen, setIsOpen, task }: TaskDialogProps) {
               )}
             />
             <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => handleOpenChange(false)}>Cancel</Button>
+              <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button>
               <Button type="submit">{task ? 'Save Changes' : 'Create Task'}</Button>
             </DialogFooter>
           </form>
