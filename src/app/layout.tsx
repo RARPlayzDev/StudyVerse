@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/toaster";
+import { FirebaseClientProvider } from "@/firebase";
+import { FirebaseErrorListener } from "@/components/FirebaseErrorListener";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -23,7 +25,10 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
       </head>
       <body className={`${inter.variable} font-body antialiased bg-gradient-to-br from-gray-950 via-slate-900 to-purple-950 min-h-screen`}>
-        {children}
+        <FirebaseClientProvider>
+          <FirebaseErrorListener />
+          {children}
+        </FirebaseClientProvider>
         <Toaster />
       </body>
     </html>

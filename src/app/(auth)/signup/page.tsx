@@ -13,8 +13,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Logo from '@/components/common/logo';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth, useUser } from '@/firebase';
+import { initiateEmailSignUp } from '@/firebase/non-blocking-login';
+import { signInWithGoogle } from '@/firebase/auth/google-signin';
 
 export default function SignupPage() {
   const [fullName, setFullName] = useState('');
@@ -23,6 +26,14 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const { toast } = useToast();
   const router = useRouter();
+  const auth = useAuth();
+  const { user, isUserLoading } = useUser();
+
+  useEffect(() => {
+    if (user) {
+      router.push("/dashboard");
+    }
+  }, [user, router]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -34,14 +45,24 @@ export default function SignupPage() {
       });
       return;
     }
-    // Add user to mock auth system
-    console.log('User created:', { fullName, email });
+    initiateEmailSignUp(auth, email, password);
     toast({
       title: 'Account Created',
-      description: 'Welcome to StudyVerse!',
+      description: 'Welcome to StudyVerse! Redirecting you to the dashboard.',
     });
-    router.push('/dashboard');
   };
+  
+  const handleGoogleSignIn = () => {
+    signInWithGoogle(auth);
+  };
+
+  if (isUserLoading || user) {
+    return (
+      <div className="w-full max-w-md text-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-md">
@@ -106,7 +127,7 @@ export default function SignupPage() {
               <Button type="submit" className="w-full">
                 Create an account
               </Button>
-              <Button variant="outline" className="w-full" type="button">
+              <Button variant="outline" className="w-full" type="button" onClick={handleGoogleSignIn}>
                 Sign up with Google
               </Button>
             </div>

@@ -10,6 +10,7 @@ import {
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -23,13 +24,20 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Button } from '../ui/button';
-import { placeholderUsers } from '@/lib/placeholder-data';
 import Logo from '../common/logo';
 import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
+import { useAuth, useUser } from '@/firebase';
 
 export default function Header() {
-  // In a real app, you'd get this from your auth context
-  const user = placeholderUsers.find(u => u.role === 'student');
+  const { user } = useUser();
+  const auth = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await auth.signOut();
+    router.push('/');
+  };
+
 
   return (
     <header className="flex h-16 items-center gap-4 border-b border-slate-800/50 bg-slate-900/50 backdrop-blur-md px-4 md:px-6 sticky top-0 z-30">
@@ -59,14 +67,14 @@ export default function Header() {
                 </div>
             </form>
             <span className="hidden md:inline-block text-sm text-muted-foreground">
-                Welcome back, {user?.name.split(' ')[0]}!
+                Welcome back, {user?.displayName?.split(' ')[0] || 'Student'}!
             </span>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="secondary" size="icon" className="rounded-full">
                         <Avatar>
-                            <AvatarImage src={user?.avatarUrl} alt={user?.name} data-ai-hint="woman portrait" />
-                            <AvatarFallback>{user?.name.charAt(0)}</AvatarFallback>
+                            {user?.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'user'} data-ai-hint="woman portrait" />}
+                            <AvatarFallback>{user?.displayName?.charAt(0) || user?.email?.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <span className="sr-only">Toggle user menu</span>
                     </Button>
@@ -77,8 +85,8 @@ export default function Header() {
                     <DropdownMenuItem>Settings</DropdownMenuItem>
                     <DropdownMenuItem>Support</DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                        <Link href="/">Logout</Link>
+                    <DropdownMenuItem onClick={handleLogout}>
+                        Logout
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>

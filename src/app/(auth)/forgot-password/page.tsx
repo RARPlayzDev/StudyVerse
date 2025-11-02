@@ -8,17 +8,29 @@ import { Label } from "@/components/ui/label";
 import Logo from "@/components/common/logo";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/firebase";
+import { sendPasswordResetEmail } from "firebase/auth";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const { toast } = useToast();
+  const auth = useAuth();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    toast({
-      title: "Password Reset Email Sent",
-      description: `If an account with ${email} exists, you will receive an email with instructions to reset your password.`,
-    });
+    try {
+      await sendPasswordResetEmail(auth, email);
+      toast({
+        title: "Password Reset Email Sent",
+        description: `If an account with ${email} exists, you will receive an email with instructions to reset your password.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   return (

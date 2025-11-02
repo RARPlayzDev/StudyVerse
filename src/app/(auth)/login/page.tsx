@@ -7,31 +7,46 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Logo from "@/components/common/logo";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth, useUser } from "@/firebase";
+import { initiateEmailSignIn } from "@/firebase/non-blocking-login";
+import { signInWithGoogle } from "@/firebase/auth/google-signin";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { toast } = useToast();
   const router = useRouter();
+  const auth = useAuth();
+  const { user, isUserLoading } = useUser();
+
+  useEffect(() => {
+    if (user) {
+      router.push("/dashboard");
+    }
+  }, [user, router]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (email === "test@example.com" && password === "password") {
-      toast({
-        title: "Login Successful",
-        description: "Welcome back!",
-      });
-      router.push("/dashboard");
-    } else {
-      toast({
-        title: "Invalid Credentials",
-        description: "Please check your email and password.",
-        variant: "destructive",
-      });
-    }
+    initiateEmailSignIn(auth, email, password);
+    toast({
+      title: "Logging In...",
+      description: "Please wait while we check your credentials.",
+    });
   };
+
+  const handleGoogleSignIn = () => {
+    signInWithGoogle(auth);
+  };
+
+  if (isUserLoading || user) {
+    return (
+      <div className="w-full max-w-md text-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-md">
@@ -77,7 +92,7 @@ export default function LoginPage() {
               <Button type="submit" className="w-full">
                 Login
               </Button>
-              <Button variant="outline" className="w-full" type="button">
+              <Button variant="outline" className="w-full" type="button" onClick={handleGoogleSignIn}>
                 Login with Google
               </Button>
             </div>
