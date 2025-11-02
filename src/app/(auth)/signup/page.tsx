@@ -15,18 +15,23 @@ import { Label } from '@/components/ui/label';
 import Logo from '@/components/common/logo';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useFirestore, useUser } from '@/firebase';
 import { initiateEmailSignUp } from '@/firebase/non-blocking-login';
 import { signInWithGoogle } from '@/firebase/auth/google-signin';
+import { User, createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function SignupPage() {
-  const [fullName, setFullName] = useState('');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const { toast } = useToast();
   const router = useRouter();
   const auth = useAuth();
+  const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
 
   useEffect(() => {
@@ -34,6 +39,29 @@ export default function SignupPage() {
       router.push("/dashboard");
     }
   }, [user, router]);
+  
+  const createUserProfile = (user: User, name: string) => {
+    const userRef = doc(firestore, 'users', user.uid);
+    const newUser = {
+      id: user.uid,
+      name,
+      email: user.email,
+      role: 'student',
+      joinDate: new Date().toISOString(),
+      lastActive: new Date().toISOString(),
+      banned: false,
+    };
+
+    setDoc(userRef, newUser)
+      .catch((serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: userRef.path,
+          operation: 'create',
+          requestResourceData: newUser,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
+  };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -45,11 +73,22 @@ export default function SignupPage() {
       });
       return;
     }
-    initiateEmailSignUp(auth, email, password);
-    toast({
-      title: 'Account Created',
-      description: 'Welcome to StudyVerse! Redirecting you to the dashboard.',
-    });
+    
+    createUserWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        createUserProfile(userCredential.user, name);
+        toast({
+          title: 'Account Created',
+          description: 'Welcome to StudyVerse! Redirecting you to the dashboard.',
+        });
+      })
+      .catch((error) => {
+        toast({
+          title: 'Signup Error',
+          description: error.message,
+          variant: 'destructive',
+        });
+      });
   };
   
   const handleGoogleSignIn = () => {
@@ -86,8 +125,8 @@ export default function SignupPage() {
                   placeholder="Alex Johnson"
                   required
                   className="bg-background/50"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                 />
               </div>
               <div className="grid gap-2">

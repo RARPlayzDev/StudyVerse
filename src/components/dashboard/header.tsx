@@ -26,12 +26,22 @@ import { Input } from '@/components/ui/input';
 import { Button } from '../ui/button';
 import Logo from '../common/logo';
 import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useDoc, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import type { User as UserType } from '@/lib/types';
 
 export default function Header() {
   const { user } = useUser();
   const auth = useAuth();
+  const firestore = useFirestore();
   const router = useRouter();
+
+  const userDocRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
+  const { data: userData } = useDoc<UserType>(userDocRef);
 
   const handleLogout = async () => {
     await auth.signOut();
@@ -67,14 +77,14 @@ export default function Header() {
                 </div>
             </form>
             <span className="hidden md:inline-block text-sm text-muted-foreground">
-                Welcome back, {user?.displayName?.split(' ')[0] || 'Student'}!
+                Welcome back, {userData?.name?.split(' ')[0] || user?.displayName?.split(' ')[0] || 'Student'}!
             </span>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="secondary" size="icon" className="rounded-full">
                         <Avatar>
                             {user?.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'user'} data-ai-hint="woman portrait" />}
-                            <AvatarFallback>{user?.displayName?.charAt(0) || user?.email?.charAt(0)}</AvatarFallback>
+                            <AvatarFallback>{userData?.name?.charAt(0) || user?.displayName?.charAt(0) || user?.email?.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <span className="sr-only">Toggle user menu</span>
                     </Button>
