@@ -1,3 +1,4 @@
+
 'use client';
 import { useMemo, useState, useEffect } from 'react';
 import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
@@ -13,6 +14,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { cn } from '@/lib/utils';
 import { isPast, startOfDay, isSameDay } from 'date-fns';
+import { DragDropContext, Droppable, Draggable, OnDragEndResponder } from '@hello-pangea/dnd';
 
 type Column = {
     title: string;
@@ -26,16 +28,10 @@ const columns: Column[] = [
     { title: "Done", status: "done" },
 ];
 
-function TaskCard({ task, onEdit, onStatusChange, onDelete }: { task: Task; onEdit: () => void; onStatusChange: (status: Task['status']) => void; onDelete: (event: React.MouseEvent) => void; }) {
-    const isClickable = task.status === 'todo' || task.status === 'inprogress';
-    
+function TaskCard({ task, onEdit, onDelete, onStatusChange }: { task: Task; onEdit: () => void; onDelete: (event: React.MouseEvent) => void; onStatusChange: (status: Task['status']) => void; }) {
     return (
         <Card 
-            className={cn(
-                "mb-4 bg-background/50 transition-colors",
-                isClickable ? "hover:bg-background/80 cursor-pointer" : "hover:bg-background/70"
-            )}
-            onClick={isClickable ? onEdit : undefined}
+            className="mb-4 bg-background/50 transition-colors hover:bg-background/80"
         >
             <CardContent className="p-4">
                 <div className="flex justify-between items-start">
@@ -48,7 +44,7 @@ function TaskCard({ task, onEdit, onStatusChange, onDelete }: { task: Task; onEd
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={onEdit}><Edit className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
-                            <DropdownMenuSub>
+                             <DropdownMenuSub>
                                 <DropdownMenuSubTrigger>Move to</DropdownMenuSubTrigger>
                                 <DropdownMenuSubContent>
                                     {columns.map(col => (
@@ -93,8 +89,14 @@ export default function KanbanBoard() {
         if (tasks && user) {
             const today = startOfDay(new Date());
             tasks.forEach(task => {
-                if ((task.status === 'inprogress' || task.status === 'todo') && isPast(new Date(task.dueDate)) && !isSameDay(new Date(task.dueDate), today)) {
-                    handleStatusChange(task.id, 'overdue');
+                const isOverdue = isPast(new Date(task.dueDate)) && !isSameDay(new Date(task.dueDate), today);
+                if ((task.status === 'inprogress' || task.status === 'todo') && isOverdue) {
+                     if (task.status !== 'overdue') {
+                        handleStatusChange(task.id, 'overdue');
+                    }
+                } else if (task.status === 'overdue' && !isOverdue) {
+                    // If a task was overdue but date is changed to future, move it back to 'todo'
+                    handleStatusChange(task.id, 'todo');
                 }
             });
         }
@@ -128,24 +130,28 @@ export default function KanbanBoard() {
     const handleSaveTask = (savedTask: Omit<Task, 'id' | 'userId' | 'status'> & { id?: string }) => {
         if (!user) return;
 
-        if (savedTask.id) {
-            // Update existing task
-            const taskRef = doc(firestore, `users/${user.uid}/tasks/${savedTask.id}`);
-            const { id, ...taskData } = savedTask;
-            updateDoc(taskRef, taskData).catch(err => {
+        const taskDataToSave = {
+            ...savedTask,
+            startDate: savedTask.startDate ? savedTask.startDate : new Date().toISOString().split('T')[0],
+            dueDate: savedTask.dueDate ? savedTask.dueDate : new Date().toISOString().split('T')[0],
+        };
+
+        if (taskDataToSave.id) {
+            const taskRef = doc(firestore, `users/${user.uid}/tasks/${taskDataToSave.id}`);
+            const { id, ...data } = taskDataToSave;
+            updateDoc(taskRef, data).catch(err => {
                 const permissionError = new FirestorePermissionError({
                     path: taskRef.path,
                     operation: 'update',
-                    requestResourceData: taskData
+                    requestResourceData: data
                 });
                 errorEmitter.emit('permission-error', permissionError);
             });
         } else {
-            // Create new task
             const collectionRef = collection(firestore, `users/${user.uid}/tasks`);
-            const { id, ...taskData } = savedTask; // Destructure to remove undefined id
+            const { id, ...data } = taskDataToSave;
             const newTaskData = {
-                ...taskData,
+                ...data,
                 userId: user.uid,
                 status: 'todo' as const
             }
@@ -186,6 +192,21 @@ export default function KanbanBoard() {
         });
     };
 
+    const onDragEnd: OnDragEndResponder = (result) => {
+        const { source, destination, draggableId } = result;
+
+        if (!destination) {
+            return;
+        }
+
+        if (source.droppableId === destination.droppableId && source.index === destination.index) {
+            return;
+        }
+        
+        const newStatus = destination.droppableId as Task['status'];
+        handleStatusChange(draggableId, newStatus);
+    };
+
     const getColumnIcon = (status: Task['status']) => {
         switch (status) {
             case 'todo': return <Circle className="h-4 w-4 text-muted-foreground" />;
@@ -197,47 +218,72 @@ export default function KanbanBoard() {
 
     return (
         <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
-                {columns.map(column => {
-                    const columnTasks = tasksByStatus[column.status];
-                    return (
-                        <div key={column.status} className="rounded-lg flex flex-col">
-                            <div className="flex justify-between items-center mb-4 px-1 min-h-[44px]">
-                                <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                                    {getColumnIcon(column.status)}
-                                    {column.title}
-                                    <Badge variant="secondary" className="h-5">{columnTasks.length}</Badge>
-                                </h2>
-                                {column.status === 'todo' && (
-                                    <Button variant="ghost" size="sm" onClick={handleAddTask}>
-                                        <PlusCircle className="w-4 h-4 mr-2" />
-                                        Add Task
-                                    </Button>
-                                )}
+            <DragDropContext onDragEnd={onDragEnd}>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+                    {columns.map(column => {
+                        const columnTasks = tasksByStatus[column.status];
+                        return (
+                            <div key={column.status} className="rounded-lg flex flex-col">
+                                <div className="flex justify-between items-center mb-4 px-1 min-h-[44px]">
+                                    <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                                        {getColumnIcon(column.status)}
+                                        {column.title}
+                                        <Badge variant="secondary" className="h-5">{columnTasks?.length || 0}</Badge>
+                                    </h2>
+                                    {column.status === 'todo' && (
+                                        <Button variant="ghost" size="sm" onClick={handleAddTask}>
+                                            <PlusCircle className="w-4 h-4 mr-2" />
+                                            Add Task
+                                        </Button>
+                                    )}
+                                </div>
+                                <Droppable droppableId={column.status}>
+                                    {(provided, snapshot) => (
+                                        <Card 
+                                            ref={provided.innerRef}
+                                            {...provided.droppableProps}
+                                            className={cn(
+                                                "bg-card/30 backdrop-blur-sm border-border/30 p-4 flex-1 min-h-[200px] transition-colors",
+                                                snapshot.isDraggingOver && "bg-accent/20"
+                                            )}
+                                        >
+                                            <CardContent className="p-0">
+                                                {isLoading && <p>Loading...</p>}
+                                                {!isLoading && columnTasks?.map((task, index) => 
+                                                    <Draggable key={task.id} draggableId={task.id} index={index}>
+                                                        {(provided, snapshot) => (
+                                                            <div
+                                                                ref={provided.innerRef}
+                                                                {...provided.draggableProps}
+                                                                {...provided.dragHandleProps}
+                                                                style={{...provided.draggableProps.style}}
+                                                                className={cn(snapshot.isDragging && "shadow-lg rounded-lg")}
+                                                            >
+                                                                <TaskCard 
+                                                                    task={task} 
+                                                                    onEdit={() => handleEditTask(task)}
+                                                                    onStatusChange={(newStatus) => handleStatusChange(task.id, newStatus)}
+                                                                    onDelete={(e) => { e.stopPropagation(); handleDeleteTask(task.id); }}
+                                                                />
+                                                            </div>
+                                                        )}
+                                                    </Draggable>
+                                                )}
+                                                {provided.placeholder}
+                                                {!isLoading && columnTasks?.length === 0 && (
+                                                    <div className="flex items-center justify-center h-full text-center text-muted-foreground p-4 text-sm min-h-[100px]">
+                                                        {column.status === 'done' ? "Let's get some work done!" : column.status === 'overdue' ? 'No overdue tasks. Keep it up!' : `No tasks in ${column.title.toLowerCase()}.`}
+                                                    </div>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+                                    )}
+                                </Droppable>
                             </div>
-                            <Card className="bg-card/30 backdrop-blur-sm border-border/30 p-4 flex-1 min-h-[200px]">
-                                <CardContent className="p-0">
-                                    {isLoading && <p>Loading...</p>}
-                                    {!isLoading && columnTasks.map(task => 
-                                        <TaskCard 
-                                            key={task.id} 
-                                            task={task} 
-                                            onEdit={() => handleEditTask(task)}
-                                            onStatusChange={(newStatus) => handleStatusChange(task.id, newStatus)}
-                                            onDelete={(e) => { e.stopPropagation(); handleDeleteTask(task.id); }}
-                                        />
-                                    )}
-                                     {!isLoading && columnTasks.length === 0 && (
-                                        <div className="flex items-center justify-center h-full text-center text-muted-foreground p-4 text-sm min-h-[100px]">
-                                            {column.status === 'done' ? "Let's get some work done!" : column.status === 'overdue' ? 'No overdue tasks. Keep it up!' : `No tasks in ${column.title.toLowerCase()}.`}
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </div>
-                    );
-                })}
-            </div>
+                        );
+                    })}
+                </div>
+            </DragDropContext>
             <TaskDialog 
                 isOpen={isDialogOpen} 
                 setIsOpen={setDialogOpen}
