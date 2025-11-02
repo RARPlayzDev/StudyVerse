@@ -171,7 +171,6 @@ export default function KanbanBoard() {
         });
     };
 
-
     const getColumnIcon = (status: Task['status']) => {
         switch (status) {
             case 'todo': return <Circle className="h-4 w-4 text-muted-foreground" />;
@@ -180,7 +179,6 @@ export default function KanbanBoard() {
         }
     }
 
-
     return (
         <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
@@ -188,7 +186,7 @@ export default function KanbanBoard() {
                     const columnTasks = tasksByStatus[column.status];
                     return (
                         <div key={column.status} className="rounded-lg flex flex-col">
-                            <div className="flex justify-between items-center mb-4 px-1">
+                            <div className="flex justify-between items-center mb-4 px-1 min-h-[44px]">
                                 <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
                                     {getColumnIcon(column.status)}
                                     {column.title}
@@ -201,7 +199,7 @@ export default function KanbanBoard() {
                                     </Button>
                                 )}
                             </div>
-                            <Card className="bg-card/30 backdrop-blur-sm border-border/30 p-4 flex-1">
+                            <Card className="bg-card/30 backdrop-blur-sm border-border/30 p-4 flex-1 min-h-[200px]">
                                 <CardContent className="p-0">
                                     {isLoading && <p>Loading...</p>}
                                     {!isLoading && columnTasks.map(task => 
