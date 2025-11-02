@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { Music4, Pause, Play, Repeat, Settings, SkipBack, SkipForward, Shuffle } from "lucide-react";
+import { Music4, Pause, Play, Repeat, Settings, SkipBack, SkipForward, Shuffle, Sparkles } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -270,25 +270,38 @@ export default function FocusPage() {
             </CardContent>
           </Card>
           
-          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-            <CardHeader>
-              <CardTitle>Focus Music</CardTitle>
-              <CardDescription>Lofi beats to study to.</CardDescription>
-            </CardHeader>
-            <CardContent className="aspect-video">
-              <iframe 
-                className="w-full h-full rounded-md"
-                src="https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&mute=1&loop=1" 
-                title="YouTube video player" 
-                frameBorder="0" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                allowFullScreen>
-              </iframe>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 gap-8">
+            <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+              <CardHeader>
+                <CardTitle>Focus Music</CardTitle>
+                <CardDescription>Lofi beats to study to.</CardDescription>
+              </CardHeader>
+              <CardContent className="aspect-video">
+                <iframe 
+                  className="w-full h-full rounded-md"
+                  src="https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&mute=1&loop=1" 
+                  title="YouTube video player" 
+                  frameBorder="0" 
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                  allowFullScreen>
+                </iframe>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-card/50 backdrop-blur-sm border-border/50 flex flex-col items-center justify-center text-center">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-green-500"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                    Spotify Integration
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">Coming soon!</p>
+              </CardContent>
+            </Card>
+          </div>
 
         </div>
       </div>
     </div>
   );
-}
