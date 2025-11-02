@@ -12,7 +12,7 @@ import { TaskDialog } from './task-dialog';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { cn } from '@/lib/utils';
-import { isPast, startOfDay } from 'date-fns';
+import { isPast, startOfDay, isSameDay } from 'date-fns';
 
 type Column = {
     title: string;
@@ -93,7 +93,7 @@ export default function KanbanBoard() {
         if (tasks && user) {
             const today = startOfDay(new Date());
             tasks.forEach(task => {
-                if (task.status === 'inprogress' && isPast(new Date(task.dueDate)) && !isSameDay(new Date(task.dueDate), today)) {
+                if ((task.status === 'inprogress' || task.status === 'todo') && isPast(new Date(task.dueDate)) && !isSameDay(new Date(task.dueDate), today)) {
                     handleStatusChange(task.id, 'overdue');
                 }
             });
@@ -143,8 +143,9 @@ export default function KanbanBoard() {
         } else {
             // Create new task
             const collectionRef = collection(firestore, `users/${user.uid}/tasks`);
+            const { id, ...taskData } = savedTask; // Destructure to remove undefined id
             const newTaskData = {
-                ...savedTask,
+                ...taskData,
                 userId: user.uid,
                 status: 'todo' as const
             }
@@ -227,7 +228,7 @@ export default function KanbanBoard() {
                                         />
                                     )}
                                      {!isLoading && columnTasks.length === 0 && (
-                                        <div className="flex items-center justify-center h-full text-center text-muted-foreground p-4 text-sm">
+                                        <div className="flex items-center justify-center h-full text-center text-muted-foreground p-4 text-sm min-h-[100px]">
                                             {column.status === 'done' ? "Let's get some work done!" : column.status === 'overdue' ? 'No overdue tasks. Keep it up!' : `No tasks in ${column.title.toLowerCase()}.`}
                                         </div>
                                     )}
@@ -246,5 +247,3 @@ export default function KanbanBoard() {
         </>
     );
 }
-
-    
