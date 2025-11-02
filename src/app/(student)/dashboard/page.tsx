@@ -1,16 +1,11 @@
+'use client';
 import Link from "next/link"
 import {
   Activity,
   ArrowUpRight,
   BookOpen,
-  CircleUser,
-  CreditCard,
-  DollarSign,
-  Menu,
-  Package2,
-  Search,
-  Users,
   Timer,
+  Users,
 } from "lucide-react"
 
 import {
@@ -36,11 +31,32 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import PageTitle from "@/components/common/page-title"
-import { placeholderNotes, placeholderTasks } from "@/lib/placeholder-data"
+import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
+import { collection, query, orderBy, limit } from "firebase/firestore"
+import type { Task, Note as NoteType } from "@/lib/types"
 
 export default function Dashboard() {
-  const upcomingTasks = placeholderTasks.filter(t => t.status !== 'done').slice(0, 3);
-  const recentNotes = placeholderNotes.slice(0, 3);
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  const tasksQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(collection(firestore, 'users', user.uid, 'tasks'), orderBy('dueDate'), limit(3));
+  }, [firestore, user]);
+
+  const notesQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    // This should ideally query a shared 'notes' collection, ordered by date
+    // For now, we query user-specific notes as a placeholder for the structure
+    return query(collection(firestore, 'users', user.uid, 'notes'), orderBy('date', 'desc'), limit(3));
+  }, [firestore, user]);
+
+  const { data: upcomingTasks, isLoading: tasksLoading } = useCollection<Task>(tasksQuery);
+  const { data: recentNotes, isLoading: notesLoading } = useCollection<NoteType>(notesQuery);
+
+  const upcomingTasksFiltered = upcomingTasks?.filter(t => t.status !== 'done');
+  const tasksDueCount = upcomingTasks?.filter(t => t.status !== 'done').length ?? 0;
+  const tasksCompletedCount = upcomingTasks?.filter(t => t.status === 'done').length ?? 0;
 
   return (
     <>
@@ -54,9 +70,9 @@ export default function Dashboard() {
             <Timer className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1h 45m</div>
+            <div className="text-2xl font-bold">0h 0m</div>
             <p className="text-xs text-muted-foreground">
-              +25m from yesterday
+              Let's get a session in!
             </p>
           </CardContent>
         </Card>
@@ -68,9 +84,9 @@ export default function Dashboard() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{placeholderTasks.filter(t => t.status !== 'done').length}</div>
+            <div className="text-2xl font-bold">{tasksDueCount}</div>
             <p className="text-xs text-muted-foreground">
-              {placeholderTasks.filter(t => t.status === 'done').length} tasks completed
+              {tasksCompletedCount} tasks completed
             </p>
           </CardContent>
         </Card>
@@ -80,7 +96,7 @@ export default function Dashboard() {
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+{placeholderNotes.length}</div>
+            <div className="text-2xl font-bold">+{recentNotes?.length ?? 0}</div>
             <p className="text-xs text-muted-foreground">
               in the last 7 days
             </p>
@@ -92,9 +108,9 @@ export default function Dashboard() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+3</div>
+            <div className="text-2xl font-bold">0</div>
             <p className="text-xs text-muted-foreground">
-              new study rooms joined
+              Join a study room
             </p>
           </CardContent>
         </Card>
@@ -116,36 +132,39 @@ export default function Dashboard() {
             </Button>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Task</TableHead>
-                  <TableHead className="hidden xl:table-column">
-                    Subject
-                  </TableHead>
-                  <TableHead className="hidden md:table-cell">
-                    Priority
-                  </TableHead>
-                  <TableHead className="text-right">Due Date</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {upcomingTasks.map((task) => (
-                  <TableRow key={task.id}>
-                    <TableCell>
-                      <div className="font-medium">{task.title}</div>
-                    </TableCell>
-                    <TableCell className="hidden xl:table-column">
-                      {task.subject}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <Badge variant={task.priority === 'high' ? 'destructive' : task.priority === 'medium' ? 'secondary' : 'outline'} className="capitalize">{task.priority}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">{task.dueDate}</TableCell>
+             {tasksLoading ? (
+              <p className="text-muted-foreground text-sm">Loading tasks...</p>
+             ) : (tasksDueCount > 0 && upcomingTasksFiltered) ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Task</TableHead>
+                    <TableHead className="hidden xl:table-column">Subject</TableHead>
+                    <TableHead className="hidden md:table-cell">Priority</TableHead>
+                    <TableHead className="text-right">Due Date</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {upcomingTasksFiltered.map((task) => (
+                    <TableRow key={task.id}>
+                      <TableCell><div className="font-medium">{task.title}</div></TableCell>
+                      <TableCell className="hidden xl:table-column">{task.subject}</TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        <Badge variant={task.priority === 'high' ? 'destructive' : task.priority === 'medium' ? 'secondary' : 'outline'} className="capitalize">{task.priority}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">{task.dueDate}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+             ) : (
+                <div className="text-center py-10 text-muted-foreground">
+                  <p>No upcoming tasks. Enjoy your break!</p>
+                   <Button asChild variant="link">
+                      <Link href="/dashboard/planner">Add a new task</Link>
+                  </Button>
+                </div>
+             )}
           </CardContent>
         </Card>
         <Card className="bg-card/50 backdrop-blur-sm border-border/50">
@@ -156,23 +175,29 @@ export default function Dashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-6">
-            {recentNotes.map((note) => (
-              <div key={note.id} className="flex items-center gap-4">
-                <Avatar className="hidden h-9 w-9 sm:flex">
-                  <AvatarImage src={note.uploaderAvatar} alt="Avatar" data-ai-hint="woman portrait" />
-                  <AvatarFallback>{note.uploader.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div className="grid gap-1">
-                  <p className="text-sm font-medium leading-none">
-                    {note.title}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    by {note.uploader} in {note.subject}
-                  </p>
+            {notesLoading ? (
+                <p className="text-muted-foreground text-sm">Loading notes...</p>
+            ) : (recentNotes && recentNotes.length > 0) ? (
+                recentNotes.map((note) => (
+                <div key={note.id} className="flex items-center gap-4">
+                    <Avatar className="hidden h-9 w-9 sm:flex">
+                        <AvatarImage src={'https://picsum.photos/seed/note-avatar/100/100'} alt="Avatar" data-ai-hint="person portrait" />
+                        <AvatarFallback>{note.uploader.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="grid gap-1">
+                    <p className="text-sm font-medium leading-none">{note.title}</p>
+                    <p className="text-sm text-muted-foreground">
+                        by {note.uploader} in {note.subject}
+                    </p>
+                    </div>
+                    <div className="ml-auto font-medium text-sm">{note.date ? new Date(note.date.seconds * 1000).toLocaleDateString() : ''}</div>
                 </div>
-                <div className="ml-auto font-medium text-sm">{note.date}</div>
-              </div>
-            ))}
+                ))
+            ) : (
+                 <div className="text-center py-10 text-muted-foreground">
+                  <p>No recent notes found.</p>
+                </div>
+            )}
              <Button asChild size="sm" className="mt-2 gap-1 w-full">
               <Link href="/dashboard/notes">
                 Explore Notes Hub

@@ -1,12 +1,16 @@
 'use client';
+import { useState, useEffect } from "react";
 import PageTitle from "@/components/common/page-title";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { weeklyFocusData } from "@/lib/placeholder-data";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { Play, Pause, SkipForward, SkipBack, Repeat, Shuffle } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+import { Music4, Pause, Play, Repeat, Settings, SkipBack, SkipForward, Shuffle } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const chartConfig = {
   "This Week": {
@@ -20,7 +24,63 @@ const chartConfig = {
 }
 
 export default function FocusPage() {
-  const pomodoroProgress = 60; // Example progress
+  const [duration, setDuration] = useState(25 * 60); // Default 25 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(duration);
+  const [isActive, setIsActive] = useState(false);
+  const [isDialogOpen, setDialogOpen] = useState(false);
+  const [customDuration, setCustomDuration] = useState(25);
+
+  useEffect(() => {
+    setTimeLeft(duration);
+  }, [duration]);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+
+    if (isActive && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft((prevTime) => prevTime - 1);
+      }, 1000);
+    } else if (timeLeft === 0) {
+      setIsActive(false);
+      // Optional: Add a notification or sound
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isActive, timeLeft]);
+
+  const toggleTimer = () => {
+    setIsActive(!isActive);
+  };
+
+  const resetTimer = () => {
+    setIsActive(false);
+    setTimeLeft(duration);
+  };
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
+  const pomodoroProgress = (timeLeft / duration) * 100;
+
+  const handleDurationChange = (newDuration: number) => {
+    setDuration(newDuration * 60);
+    setTimeLeft(newDuration * 60);
+    setIsActive(false);
+  };
+
+  const handleCustomDurationSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleDurationChange(customDuration);
+    setDialogOpen(false);
+  }
 
   return (
     <div>
@@ -53,9 +113,53 @@ export default function FocusPage() {
 
         <div className="space-y-8">
           <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-            <CardHeader>
-              <CardTitle>Pomodoro Timer</CardTitle>
-              <CardDescription>Work in focused 25-minute intervals.</CardDescription>
+            <CardHeader className="flex flex-row justify-between items-start">
+              <div>
+                <CardTitle>Pomodoro Timer</CardTitle>
+                <CardDescription>Work in focused intervals.</CardDescription>
+              </div>
+              <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
+                  <DialogTrigger asChild>
+                       <Button variant="ghost" size="icon"><Settings className="h-5 w-5" /></Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[425px] bg-slate-900/80 backdrop-blur-md border-slate-700">
+                      <DialogHeader>
+                          <DialogTitle>Set Focus Duration</DialogTitle>
+                      </DialogHeader>
+                      <form onSubmit={handleCustomDurationSubmit}>
+                        <div className="grid gap-4 py-4">
+                            <RadioGroup defaultValue={String(duration / 60)} onValueChange={(val) => handleDurationChange(Number(val))} className="grid grid-cols-3 gap-4">
+                                <div>
+                                    <RadioGroupItem value="25" id="r1" className="peer sr-only" />
+                                    <Label htmlFor="r1" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">25 min</Label>
+                                </div>
+                                 <div>
+                                    <RadioGroupItem value="50" id="r2" className="peer sr-only" />
+                                    <Label htmlFor="r2" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">50 min</Label>
+                                </div>
+                                 <div>
+                                    <RadioGroupItem value="75" id="r3" className="peer sr-only" />
+                                    <Label htmlFor="r3" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">75 min</Label>
+                                </div>
+                            </RadioGroup>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="custom-duration" className="text-right col-span-1">Custom</Label>
+                                <Input
+                                    id="custom-duration"
+                                    type="number"
+                                    value={customDuration}
+                                    onChange={(e) => setCustomDuration(Number(e.target.value))}
+                                    className="col-span-2"
+                                />
+                                <span className="col-span-1 text-muted-foreground">minutes</span>
+                            </div>
+                        </div>
+                         <div className="flex justify-end">
+                             <Button type="submit">Set Duration</Button>
+                         </div>
+                      </form>
+                  </DialogContent>
+              </Dialog>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-4">
               <div className="relative h-40 w-40">
@@ -76,19 +180,22 @@ export default function FocusPage() {
                     r="42"
                     fill="transparent"
                     strokeDasharray="264"
-                    strokeDashoffset={264 - (264 * pomodoroProgress) / 100}
+                    strokeDashoffset={264 - (264 * (isActive ? (timeLeft / duration) * 100 : 100)) / 100}
                     strokeLinecap="round"
                     transform="rotate(-90 50 50)"
+                    style={{ transition: 'stroke-dashoffset 1s linear' }}
                   ></circle>
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-3xl font-bold">15:32</span>
-                  <span className="text-sm text-muted-foreground">Focusing</span>
+                  <span className="text-3xl font-bold">{formatTime(timeLeft)}</span>
+                  <span className="text-sm text-muted-foreground">{isActive ? "Focusing" : "Paused"}</span>
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button>Start Focus</Button>
-                <Button variant="ghost">Reset</Button>
+                <Button onClick={toggleTimer} className="w-24">
+                  {isActive ? "Pause" : "Start Focus"}
+                </Button>
+                <Button variant="ghost" onClick={resetTimer}>Reset</Button>
               </div>
             </CardContent>
           </Card>
@@ -98,22 +205,10 @@ export default function FocusPage() {
               <CardTitle>Focus Music</CardTitle>
               <CardDescription>Lofi beats to study to.</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-4">
-                <div data-ai-hint="album cover" className="h-20 w-20 bg-muted rounded-md bg-cover bg-center" style={{backgroundImage: 'url(https://picsum.photos/seed/album1/200/200)'}}></div>
-                <div className="flex-1">
-                  <p className="font-semibold">Astral Awakening</p>
-                  <p className="text-sm text-muted-foreground">Cosmic Lofi</p>
-                  <Progress value={33} className="h-2 mt-2" />
-                </div>
-              </div>
-              <div className="flex justify-between items-center mt-4">
-                <Button variant="ghost" size="icon"><Shuffle className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="icon"><SkipBack className="h-5 w-5" /></Button>
-                <Button size="icon" className="h-12 w-12"><Play className="h-6 w-6" /></Button>
-                <Button variant="ghost" size="icon"><SkipForward className="h-5 w-5" /></Button>
-                <Button variant="ghost" size="icon"><Repeat className="h-4 w-4" /></Button>
-              </div>
+            <CardContent className="text-center text-muted-foreground flex flex-col items-center justify-center h-48 gap-4">
+              <Music4 className="w-10 h-10 text-muted-foreground/50" />
+              <p className="text-sm">Music integration with Spotify and other services is coming soon!</p>
+              <p className="text-xs">Let us know what service you'd like to see first.</p>
             </CardContent>
           </Card>
 
