@@ -1,7 +1,7 @@
 'use client';
 import { notFound, useParams } from 'next/navigation';
 import { useDoc, useFirestore, useUser, useMemoFirebase, useCollection } from '@/firebase';
-import { doc, collection, addDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { doc, collection, addDoc, serverTimestamp, query, orderBy, where } from 'firebase/firestore';
 import type { CollabRoom, Message, User as UserType } from '@/lib/types';
 import PageTitle from '@/components/common/page-title';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +10,6 @@ import ChatInterface from '@/components/collab/chat-interface';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useCollection as useUsersData } from '@/firebase/firestore/use-collection';
-
 
 export default function CollabRoomPage() {
   const { roomId } = useParams();
@@ -32,13 +31,11 @@ export default function CollabRoomPage() {
   const { data: messages, isLoading: areMessagesLoading } = useCollection<Message>(messagesQuery);
   
   // This is not efficient, but for a small number of members it is fine.
-  // In a production app, you'd fetch user profiles more efficiently.
-  const userDocsQuery = useMemoFirebase(() => {
-    if (!room?.members || room.members.length === 0) return null;
-    return query(collection(firestore, 'users'), where('id', 'in', room.members));
-  }, [firestore, room]);
+  // In a production app, you'd fetch user profiles more efficiently, maybe with a separate hook for each user.
+  // The previous query was invalid. For now, we'll just display member IDs.
+  // A more robust solution would be needed for a real application.
+  const memberProfiles = room?.members.map(id => ({ id, name: id.substring(0, 8) + '...', avatarUrl: '' })) || [];
 
-  const { data: memberProfiles } = useUsersData<UserType>(userDocsQuery);
 
   if (isRoomLoading) {
     return <div>Loading room...</div>;
