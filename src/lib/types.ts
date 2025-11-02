@@ -46,17 +46,19 @@ export type FocusSession = {
 export type CollabRoom = {
   id: string;
   topic: string;
+  description: string;
+  type: 'public' | 'private';
   createdBy: string;
-  memberCount: number;
-  messages: Message[];
+  members: string[]; // array of user UIDs
+  inviteCode?: string;
 };
 
 export type Message = {
-  id:string;
-  sender: string;
-  senderAvatar: string;
+  id: string;
+  roomId: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar?: string;
   text: string;
-  timestamp: string;
+  timestamp: Timestamp;
 };
-
-    

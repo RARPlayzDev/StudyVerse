@@ -11,43 +11,25 @@
  * - /users/{userId}/focusSessions/{focusSessionId}: Stores focus sessions. Only the owning user can manage these.
  * - /users/{userId}/tasks/{taskId}: Stores tasks. Only the owning user can manage these.
  * - /users/{userId}/notes/{noteId}: Stores notes. Only the owning user can manage these.
- * - /collabRooms/{roomId}: Stores collaboration room data. Access is controlled by a `members` array.
- * - /collabRooms/{roomId}/messages/{messageId}: Stores chat messages. Access is controlled by the `members` array inherited from the parent document.
+ * - /collabRooms/{roomId}: Stores collaboration room data. Access is controlled by a `members` array for private rooms.
+ * - /collabRooms/{roomId}/messages/{messageId}: Stores chat messages. Access is controlled by the `members` array of the parent room.
  * - /users/{userId}/mentorChats/{mentorChatId}: Stores mentor chat data. Only the owning user can manage these.
  * - /adminLogs/{adminLogId}: Stores admin logs. Only admins can access these.
  * - /roles_admin/{userId}: Indicates admin status. Presence of a document grants admin rights.
- *
- * Key Security Decisions:
- * - User data is strictly private; users can only access their own data.
- * - Collaboration rooms are secured using a members array, which must contain the user's UID.
- * - Admin access is granted based on the existence of a document in the `roles_admin` collection.
- * - List operations are generally allowed for owner-only subcollections.
- *
- * Denormalization for Authorization:
- * The `members` array from `CollabRoom` is copied to `ChatMessage` documents to
- * allow for fast, secure message creation without additional reads.
- *
- * Structural Segregation:
- * Private user data is stored under `/users/{userId}`, while collaborative data
- * is stored in top-level collections like `/collabRooms`. Admin roles are also
- * handled via a top-level collection: `roles_admin`.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * @description Controls access to user profile information.
-     * @path /users/{userId}
-     * @allow (create) - User can create their own profile if the userId matches their auth.uid.
-     * @allow (get, update, delete) - User can get, update, and delete their own profile.
-     * @deny (create, get, update, delete) - User cannot access another user's profile.
-     * @principle Enforces document ownership.
-     */
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return request.auth != null && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+    
     match /users/{userId} {
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
       allow get: if isOwner(userId);
       allow list: if false;
       allow create: if isOwner(userId) && request.resource.data.id == request.auth.uid;
@@ -55,81 +37,30 @@ service cloud.firestore {
       allow delete: if isOwner(userId) && resource.data.id == userId;
     }
 
-    /**
-     * @description Controls access to focus session data for each user.
-     * @path /users/{userId}/focusSessions/{focusSessionId}
-     * @allow (create, get, list, update, delete) - User can manage their own focus sessions.
-     * @deny (create, get, list, update, delete) - User cannot access another user's focus sessions.
-     * @principle Enforces document ownership.
-     */
-    match /users/{userId}/focusSessions/{focusSessionId} {
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+    match /users/{userId}/{subcollection}/{docId} {
+       allow read, write: if isOwner(userId);
     }
 
-    /**
-     * @description Controls access to task data for each user.
-     * @path /users/{userId}/tasks/{taskId}
-     * @allow (read, write) - User can fully manage their own tasks.
-     * @deny (read, write) - User cannot access another user's tasks.
-     * @principle Enforces document ownership.
-     */
-    match /users/{userId}/tasks/{taskId} {
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-      allow read, write: if isOwner(userId);
-    }
-
-    /**
-     * @description Controls access to note data for each user.
-     * @path /users/{userId}/notes/{noteId}
-     * @allow (create, get, list, update, delete) - User can manage their own notes.
-     * @deny (create, get, list, update, delete) - User cannot access another user's notes.
-     * @principle Enforces document ownership.
-     */
-    match /users/{userId}/notes/{noteId} {
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
-    }
-
-    /**
-     * @description Controls access to collaboration room data.
-     * @path /collabRooms/{roomId}
-     */
     match /collabRooms/{roomId} {
-      function isAdmin() {
-        return request.auth != null && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
-      }
       function isMember() {
         return request.auth != null && resource.data.members.hasAny([request.auth.uid]);
       }
       
-      // Read: Anyone can read public rooms. Members can read private rooms they belong to.
-      allow read: if request.auth != null && (resource.data.type == 'public' || isMember());
-      
-      // Create: Admins can create public rooms. Any user can create a private room.
+      // Read: Anyone authed can read public rooms. Members can read private rooms they belong to.
+      allow get: if request.auth != null && (resource.data.type == 'public' || isMember());
+      allow list: if request.auth != null; // Allow listing to discover public rooms. Private ones are filtered on client.
+
+      // Create: Admins can create public rooms. Any user can create a private room for themselves.
       allow create: if request.auth != null && (
         (request.resource.data.type == 'public' && isAdmin()) ||
-        (request.resource.data.type == 'private' && request.resource.data.createdBy == request.auth.uid)
+        (request.resource.data.type == 'private' && request.resource.data.createdBy == request.auth.uid && request.resource.data.members.hasAll([request.auth.uid]))
       );
 
-      // Update: Admins can update public rooms. The creator can update a private room.
+      // Update: Room topic/description can be updated by creator. Members can be added.
+      // We allow any member to add others to a private room.
       allow update: if request.auth != null && (
         (resource.data.type == 'public' && isAdmin()) ||
-        (resource.data.type == 'private' && resource.data.createdBy == request.auth.uid)
+        (resource.data.type == 'private' && isMember())
       );
 
       // Delete: Admins can delete public rooms. The creator can delete a private room.
@@ -139,73 +70,23 @@ service cloud.firestore {
       );
     }
 
-    /**
-     * @description Controls access to chat messages within a collaboration room.
-     * @path /collabRooms/{roomId}/messages/{messageId}
-     * @allow (create) - Only members of the room can create messages.
-     * @allow (get, list) - Any signed-in user can read messages.
-     * @allow (update, delete) - No one can update or delete messages.
-     * @principle Enforces shared access based on membership list inherited from parent.
-     */
     match /collabRooms/{roomId}/messages/{messageId} {
-      function isMember() {
-           return request.auth != null && get(/databases/$(database)/documents/collabRooms/$(roomId)).data.members[request.auth.uid] != null;
+      function isRoomMember() {
+           return request.auth != null && get(/databases/$(database)/documents/collabRooms/$(roomId)).data.members.hasAny([request.auth.uid]);
       }
-      allow get: if request.auth != null;
-      allow list: if request.auth != null;
-      allow create: if isMember() && request.resource.data.senderId == request.auth.uid;
-      allow update: if false;
-      allow delete: if false;
+      
+      // Only members of the room can read or write messages.
+      allow read, write: if isRoomMember() && request.resource.data.senderId == request.auth.uid;
     }
 
-    /**
-     * @description Controls access to mentor chat data for each user.
-     * @path /users/{userId}/mentorChats/{mentorChatId}
-     * @allow (create, get, list, update, delete) - User can manage their own mentor chats.
-     * @deny (create, get, list, update, delete) - User cannot access another user's mentor chats.
-     * @principle Enforces document ownership.
-     */
-    match /users/{userId}/mentorChats/{mentorChatId} {
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
-    }
-
-    /**
-     * @description Controls access to admin log entries.
-     * @path /adminLogs/{adminLogId}
-     * @allow (get, list) - Only admins can read admin logs.
-     * @allow (create, update, delete) - No one can create, update, or delete admin logs (for now).
-     * @principle Enforces admin-only access.
-     */
     match /adminLogs/{adminLogId} {
-      function isAdmin() {
-        return request.auth != null && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
-      }
-      allow get: if isAdmin();
-      allow list: if isAdmin();
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if isAdmin();
+      allow create, update, delete: if false; // Logs are immutable for now.
     }
-    /**
-     * @description Documents in this collection signify admin roles.
-     * @path /roles_admin/{userId}
-     */
+    
     match /roles_admin/{userId} {
-          function isAdmin(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-      allow get: if isAdmin(userId);
-      allow list: if false;
-      allow create: if isAdmin(userId);
-      allow update: if isAdmin(userId);
-      allow delete: if isAdmin(userId);
+      allow get: if isOwner(userId) || isAdmin();
+      allow list, create, update, delete: if isAdmin();
     }
   }
 }
