@@ -4,7 +4,11 @@ import KanbanBoard from "@/components/planner/kanban-board";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { taskCompletionData } from "@/lib/placeholder-data";
+import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
+import { collection, query, where } from "firebase/firestore";
+import type { Task } from "@/lib/types";
+import { useMemo } from "react";
+import { subDays, eachDayOfInterval, format, isSameDay, startOfDay } from "date-fns";
 
 const chartConfig = {
     completed: {
@@ -14,6 +18,44 @@ const chartConfig = {
 }
 
 export default function PlannerPage() {
+    const { user } = useUser();
+    const firestore = useFirestore();
+
+    const tasksQuery = useMemoFirebase(() => {
+        if (!user) return null;
+        const sevenDaysAgo = startOfDay(subDays(new Date(), 6));
+        return query(
+            collection(firestore, `users/${user.uid}/tasks`),
+            where('status', '==', 'done')
+            // Firestore doesn't support filtering by date ranges on different fields easily.
+            // We'll fetch recent completed tasks and filter client-side.
+            // In a real-world scenario with many tasks, this would be optimized.
+        );
+    }, [firestore, user]);
+
+    const { data: completedTasks, isLoading } = useCollection<Task>(tasksQuery);
+
+    const taskCompletionData = useMemo(() => {
+        const last7Days = eachDayOfInterval({
+            start: subDays(new Date(), 6),
+            end: new Date(),
+        });
+
+        return last7Days.map(day => {
+            const tasksOnDay = completedTasks?.filter(task => 
+                // Assuming dueDate is when it's marked done for this chart
+                isSameDay(new Date(task.dueDate), day)
+            ).length || 0;
+
+            return {
+                date: format(day, 'MMM d'),
+                completed: tasksOnDay
+            };
+        });
+
+    }, [completedTasks]);
+
+
     return (
         <div>
             <PageTitle title="Study Planner" subtitle="Organize your tasks and conquer your goals." />

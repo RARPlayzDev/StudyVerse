@@ -28,7 +28,7 @@ interface TaskDialogProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
   task?: Task | null;
-  onSave: (data: Omit<Task, 'id' | 'status'> & { id?: string }) => void;
+  onSave: (data: Omit<Task, 'id' | 'status' | 'userId'> & { id?: string }) => void;
 }
 
 export function TaskDialog({ isOpen, setIsOpen, task, onSave }: TaskDialogProps) {
@@ -43,20 +43,22 @@ export function TaskDialog({ isOpen, setIsOpen, task, onSave }: TaskDialogProps)
   });
   
   useEffect(() => {
-    if (task) {
-        form.reset({
-            title: task.title,
-            subject: task.subject,
-            dueDate: new Date(task.dueDate),
-            priority: task.priority,
-        });
-    } else {
-        form.reset({
-            title: '',
-            subject: '',
-            dueDate: new Date(),
-            priority: 'medium',
-        });
+    if (isOpen) {
+        if (task) {
+            form.reset({
+                title: task.title,
+                subject: task.subject,
+                dueDate: new Date(task.dueDate),
+                priority: task.priority,
+            });
+        } else {
+            form.reset({
+                title: '',
+                subject: '',
+                dueDate: new Date(),
+                priority: 'medium',
+            });
+        }
     }
   }, [task, form, isOpen]);
 

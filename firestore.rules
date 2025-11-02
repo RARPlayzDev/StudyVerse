@@ -76,19 +76,15 @@ service cloud.firestore {
     /**
      * @description Controls access to task data for each user.
      * @path /users/{userId}/tasks/{taskId}
-     * @allow (create, get, list, update, delete) - User can manage their own tasks.
-     * @deny (create, get, list, update, delete) - User cannot access another user's tasks.
+     * @allow (read, write) - User can fully manage their own tasks.
+     * @deny (read, write) - User cannot access another user's tasks.
      * @principle Enforces document ownership.
      */
     match /users/{userId}/tasks/{taskId} {
       function isOwner(userId) {
         return request.auth != null && request.auth.uid == userId;
       }
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow read, write: if isOwner(userId);
     }
 
     /**
