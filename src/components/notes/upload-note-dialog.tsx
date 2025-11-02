@@ -45,7 +45,7 @@ const noteUploadSchema = z.object({
     errorMap: () => ({ message: 'Please select a subject.' }),
   }),
   file: z
-    .instanceof(FileList)
+    .any()
     .refine((files) => files?.length === 1, 'A PDF file is required.')
     .refine(
       (files) => files?.[0]?.type === 'application/pdf',
