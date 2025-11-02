@@ -35,24 +35,18 @@ export default function SignupPage() {
 
   useEffect(() => {
     if (user) {
-      // Redirect to admin if the user is an admin, otherwise to dashboard
-      const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
-      // This is a one-off check, not real-time.
-      // A full solution would use a listener or a custom hook.
-      setDoc(adminRoleRef, {}).then(() => router.push('/admin')).catch(() => router.push('/dashboard'));
+      // After signup, new users are students, redirect to dashboard.
+      router.push('/dashboard');
     }
-  }, [user, router, firestore]);
+  }, [user, router]);
 
   const createUserProfile = async (user: User, name: string) => {
     const userRef = doc(firestore, 'users', user.uid);
-    // Hardcoded admin email
-    const isAdmin = user.email === 'kaarthik@studysync.app';
-    
     const newUser = {
       id: user.uid,
       name,
       email: user.email,
-      role: isAdmin ? 'admin' : 'student',
+      role: 'student',
       joinDate: new Date().toISOString(),
       lastActive: new Date().toISOString(),
       banned: false,
@@ -60,11 +54,6 @@ export default function SignupPage() {
 
     try {
       await setDoc(userRef, newUser);
-      if (isAdmin) {
-        const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
-        // Add a document to the roles_admin collection to grant admin privileges
-        await setDoc(adminRoleRef, { role: 'admin' });
-      }
     } catch (serverError) {
       const permissionError = new FirestorePermissionError({
         path: userRef.path,
@@ -105,8 +94,6 @@ export default function SignupPage() {
   };
   
   const handleGoogleSignIn = () => {
-    // Note: Google Sign-in will also need a mechanism to check/grant admin roles
-    // This is typically done via a backend function after the user record is created.
     signInWithGoogle(auth);
   };
 
@@ -127,7 +114,7 @@ export default function SignupPage() {
           </div>
           <CardTitle className="text-2xl">Join the StudyVerse</CardTitle>
           <CardDescription>
-            Create an account to start learning smarter. Use 'kaarthik@studysync.app' with password 'kaarthi2007' to create the admin account.
+            Create an account to start learning smarter.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -137,7 +124,7 @@ export default function SignupPage() {
                 <Label htmlFor="full-name">Full Name</Label>
                 <Input
                   id="full-name"
-                  placeholder="Kaarthik"
+                  placeholder="Your Name"
                   required
                   className="bg-background/50"
                   value={name}
@@ -149,7 +136,7 @@ export default function SignupPage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="kaarthik@studysync.app"
+                  placeholder="name@example.com"
                   required
                   className="bg-background/50"
                   value={email}
