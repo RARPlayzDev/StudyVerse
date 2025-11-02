@@ -1,5 +1,5 @@
 'use client';
-import { Message, User } from '@/lib/types';
+import { Message } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
@@ -47,7 +47,7 @@ export default function ChatInterface({ messages, onSendMessage, isLoading }: Ch
                                 <AvatarFallback>{message.senderName.charAt(0)}</AvatarFallback>
                             </Avatar>
                         )}
-                        <div className={cn("grid gap-1 max-w-[75%]", message.senderId === currentUser?.uid ? 'text-right' : 'text-left')}>
+                        <div className={cn("grid gap-1 max-w-[75%]", message.senderId === currentUser?.uid ? 'items-end' : 'items-start')}>
                             <div className="font-semibold text-sm">{message.senderId === currentUser?.uid ? 'You' : message.senderName}</div>
                             <div className={cn("p-3 rounded-lg", message.senderId === currentUser?.uid ? 'bg-primary text-primary-foreground' : 'bg-card/80')}>
                                 <p className="text-sm">{message.text}</p>
@@ -59,7 +59,7 @@ export default function ChatInterface({ messages, onSendMessage, isLoading }: Ch
                          {message.senderId === currentUser?.uid && (
                              <Avatar className="h-8 w-8">
                                 <AvatarImage src={currentUser.photoURL || undefined} data-ai-hint="person portrait" />
-                                <AvatarFallback>{currentUser.displayName?.charAt(0) || currentUser.email?.charAt(0)}</AvatarFallback>
+                                <AvatarFallback>{currentUser.displayName?.charAt(0) || currentUser.email?.charAt(0) || 'U'}</AvatarFallback>
                             </Avatar>
                         )}
                     </div>
