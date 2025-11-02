@@ -16,7 +16,6 @@ import Logo from '@/components/common/logo';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, useFirestore, useUser } from '@/firebase';
-import { initiateEmailSignUp } from '@/firebase/non-blocking-login';
 import { signInWithGoogle } from '@/firebase/auth/google-signin';
 import { User, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
@@ -36,31 +35,44 @@ export default function SignupPage() {
 
   useEffect(() => {
     if (user) {
-      router.push("/dashboard");
+      // Redirect to admin if the user is an admin, otherwise to dashboard
+      const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
+      // This is a one-off check, not real-time.
+      // A full solution would use a listener or a custom hook.
+      setDoc(adminRoleRef, {}).then(() => router.push('/admin')).catch(() => router.push('/dashboard'));
     }
-  }, [user, router]);
-  
-  const createUserProfile = (user: User, name: string) => {
+  }, [user, router, firestore]);
+
+  const createUserProfile = async (user: User, name: string) => {
     const userRef = doc(firestore, 'users', user.uid);
+    // Hardcoded admin email
+    const isAdmin = user.email === 'kaarthik@studysync.app';
+    
     const newUser = {
       id: user.uid,
       name,
       email: user.email,
-      role: 'student',
+      role: isAdmin ? 'admin' : 'student',
       joinDate: new Date().toISOString(),
       lastActive: new Date().toISOString(),
       banned: false,
     };
 
-    setDoc(userRef, newUser)
-      .catch((serverError) => {
-        const permissionError = new FirestorePermissionError({
-          path: userRef.path,
-          operation: 'create',
-          requestResourceData: newUser,
-        });
-        errorEmitter.emit('permission-error', permissionError);
+    try {
+      await setDoc(userRef, newUser);
+      if (isAdmin) {
+        const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
+        // Add a document to the roles_admin collection to grant admin privileges
+        await setDoc(adminRoleRef, { role: 'admin' });
+      }
+    } catch (serverError) {
+      const permissionError = new FirestorePermissionError({
+        path: userRef.path,
+        operation: 'create',
+        requestResourceData: newUser,
       });
+      errorEmitter.emit('permission-error', permissionError);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -75,12 +87,13 @@ export default function SignupPage() {
     }
     
     createUserWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
-        createUserProfile(userCredential.user, name);
+      .then(async (userCredential) => {
+        await createUserProfile(userCredential.user, name);
         toast({
           title: 'Account Created',
-          description: 'Welcome to StudyVerse! Redirecting you to the dashboard.',
+          description: 'Welcome to StudyVerse! Redirecting you now.',
         });
+        // The useEffect will handle redirection.
       })
       .catch((error) => {
         toast({
@@ -92,6 +105,8 @@ export default function SignupPage() {
   };
   
   const handleGoogleSignIn = () => {
+    // Note: Google Sign-in will also need a mechanism to check/grant admin roles
+    // This is typically done via a backend function after the user record is created.
     signInWithGoogle(auth);
   };
 
@@ -112,7 +127,7 @@ export default function SignupPage() {
           </div>
           <CardTitle className="text-2xl">Join the StudyVerse</CardTitle>
           <CardDescription>
-            Create your account to start learning smarter.
+            Create an account to start learning smarter. Use 'kaarthik@studysync.app' with password 'kaarthi2007' to create the admin account.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -122,7 +137,7 @@ export default function SignupPage() {
                 <Label htmlFor="full-name">Full Name</Label>
                 <Input
                   id="full-name"
-                  placeholder="Alex Johnson"
+                  placeholder="Kaarthik"
                   required
                   className="bg-background/50"
                   value={name}
@@ -134,7 +149,7 @@ export default function SignupPage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="m@example.com"
+                  placeholder="kaarthik@studysync.app"
                   required
                   className="bg-background/50"
                   value={email}

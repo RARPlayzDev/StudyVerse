@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { adminContentStats, adminEngagementStats, adminUserStats, placeholderUsers, weeklyFocusData } from "@/lib/placeholder-data";
 import { Archive, BarChart, Users, Timer, CheckCircle, Flame } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { ResponsiveContainer, BarChart as RechartsBarChart, XAxis, YAxis, Tooltip, Legend, Bar as RechartsBar } from "recharts";
+import { CartesianGrid, Bar as RechartsBar, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";

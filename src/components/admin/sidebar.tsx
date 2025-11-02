@@ -19,6 +19,8 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import Logo from '../common/logo';
+import { useAuth } from '@/firebase';
+import { useRouter } from 'next/navigation';
 
 const navItems = [
   { href: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
@@ -29,12 +31,18 @@ const navItems = [
 ];
 
 const bottomNavItems = [
-  { href: '#', icon: Settings, label: 'Settings' },
-  { href: '/', icon: LogOut, label: 'Logout' },
+  { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
 ];
 
 export default function AdminSidebar() {
   const pathname = usePathname();
+  const auth = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+      await auth.signOut();
+      router.push('/login');
+  }
 
   const renderNavItem = (item: { href: string; icon: React.ElementType; label: string }) => {
     const isActive = pathname === item.href;
@@ -69,6 +77,21 @@ export default function AdminSidebar() {
         </nav>
         <nav className="mt-auto flex flex-col items-center gap-4 px-2 py-4">
           {bottomNavItems.map(renderNavItem)}
+           <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={handleLogout}
+                className={cn(
+                  'flex h-10 w-10 items-center justify-center rounded-lg transition-colors md:h-9 md:w-9',
+                  'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <LogOut className="h-5 w-5" />
+                <span className="sr-only">Logout</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Logout</TooltipContent>
+          </Tooltip>
         </nav>
       </TooltipProvider>
     </aside>

@@ -62,9 +62,9 @@ export function ReportDisplay() {
             </Alert>
         )}
         {report && (
-          <div className="prose prose-invert prose-sm max-w-none text-muted-foreground whitespace-pre-wrap">
-            <h3 className="text-lg font-semibold text-foreground">Monthly Platform Insights</h3>
-            {report.split('\n').map((paragraph, i) => (
+          <div className="prose prose-invert prose-sm max-w-none text-muted-foreground whitespace-pre-wrap rounded-md border border-border/50 p-4 bg-background/30">
+            <h3 className="text-lg font-semibold text-foreground mt-0">Monthly Platform Insights</h3>
+            {report.split('\n\n').map((paragraph, i) => (
                 <p key={i}>{paragraph}</p>
             ))}
           </div>
