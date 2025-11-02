@@ -98,8 +98,8 @@ export default function UploadNoteDialog({
       const snapshot = await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(snapshot.ref);
 
-      // 2. Create document in Firestore
-      const notesCollection = collection(firestore, `users/${user.uid}/notes`);
+      // 2. Create document in the global 'notes' collection in Firestore
+      const notesCollection = collection(firestore, 'notes');
       const newNote = {
         userId: user.uid,
         title: values.title,

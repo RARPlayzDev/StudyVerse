@@ -10,7 +10,7 @@
  * - /users/{userId}: Stores personal user data. Only the user can access their own data.
  * - /users/{userId}/focusSessions/{focusSessionId}: Stores focus sessions. Only the owning user can manage these.
  * - /users/{userId}/tasks/{taskId}: Stores tasks. Only the owning user can manage these.
- * - /users/{userId}/notes/{noteId}: Stores notes. Only the owning user can manage these.
+ * - /notes/{noteId}: Stores notes. Any user can create, but only the owner can modify/delete.
  * - /collabRooms/{roomId}: Stores collaboration room data. Access is controlled by a `members` array for private rooms.
  * - /collabRooms/{roomId}/messages/{messageId}: Stores chat messages. Access is controlled by the `members` array of the parent room.
  * - /users/{userId}/mentorChats/{mentorChatId}: Stores mentor chat data. Only the owning user can manage these.
@@ -39,6 +39,15 @@ service cloud.firestore {
 
     match /users/{userId}/{subcollection}/{docId} {
        allow read, write: if isOwner(userId);
+    }
+
+    match /notes/{noteId} {
+        // Any authenticated user can read any note
+        allow get, list: if request.auth != null;
+        // Any authenticated user can create a note, as long as they set themselves as the owner
+        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+        // Only the user who created the note can update or delete it
+        allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
 
     match /collabRooms/{roomId} {

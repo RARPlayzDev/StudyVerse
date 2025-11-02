@@ -417,18 +417,14 @@
         }
       },
       {
-        "path": "/users/{userId}/notes/{noteId}",
+        "path": "/notes/{noteId}",
         "definition": {
           "entityName": "Note",
           "schema": {
             "$ref": "#/backend/entities/Note"
           },
-          "description": "Stores note data for each user. Includes user ID and note ID in the path.",
+          "description": "Stores note data in a global collection. Includes note ID as document ID.",
           "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier for the user."
-            },
             {
               "name": "noteId",
               "description": "The unique identifier for the note."

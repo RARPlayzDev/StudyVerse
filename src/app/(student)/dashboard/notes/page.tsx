@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useFirestore, useCollection, useUser, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { format } from 'date-fns';
 import UploadNoteDialog from '@/components/notes/upload-note-dialog';
 
@@ -31,10 +31,8 @@ export default function NotesPage() {
 
     const notesQuery = useMemoFirebase(() => {
         if (!user) return null;
-        // This creates a query to get all notes.
-        // In a real app, you might want to query a shared 'notes' collection.
-        // For now, we'll assume notes are user-specific for simplicity.
-        return collection(firestore, 'users', user.uid, 'notes');
+        // Query the global 'notes' collection, ordered by date
+        return query(collection(firestore, 'notes'), orderBy('date', 'desc'));
     }, [firestore, user]);
 
     const { data: notes, isLoading } = useCollection<Note>(notesQuery);
