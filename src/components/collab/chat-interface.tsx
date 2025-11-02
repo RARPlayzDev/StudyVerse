@@ -36,6 +36,16 @@ export default function ChatInterface({ messages, onSendMessage, isLoading }: Ch
         }
     }, [messages, isLoading]);
 
+    const getFormattedTimestamp = (timestamp: any) => {
+        if (!timestamp) return 'sending...';
+        // Firestore Timestamps have a toDate() method, JS Dates do not.
+        if (typeof timestamp.toDate === 'function') {
+            return formatDistanceToNow(timestamp.toDate(), { addSuffix: true });
+        }
+        // It's likely a JS Date object.
+        return formatDistanceToNow(timestamp, { addSuffix: true });
+    }
+
     return (
         <div className="flex flex-col h-full">
             <div ref={scrollAreaRef} className="flex-grow overflow-y-auto p-4 space-y-6">
@@ -53,7 +63,7 @@ export default function ChatInterface({ messages, onSendMessage, isLoading }: Ch
                                 <p className="text-sm">{message.text}</p>
                             </div>
                             <div className="text-xs text-muted-foreground">
-                                {message.timestamp ? formatDistanceToNow(message.timestamp.toDate(), { addSuffix: true }) : 'sending...'}
+                                {getFormattedTimestamp(message.timestamp)}
                             </div>
                         </div>
                          {message.senderId === currentUser?.uid && (
