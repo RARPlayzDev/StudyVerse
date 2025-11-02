@@ -26,10 +26,11 @@ import { useAuth, useDoc, useFirestore, useUser, useMemoFirebase } from '@/fireb
 import { doc, updateDoc } from 'firebase/firestore';
 import type { User as UserType } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Moon, Sun } from 'lucide-react';
+import { Loader2, Moon, Sun, Monitor } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { updateProfile } from 'firebase/auth';
+import { useTheme } from 'next-themes';
 
 const profileFormSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters.'),
@@ -55,6 +56,7 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const [isProfileSaving, setProfileSaving] = useState(false);
   const [isPasswordSaving, setPasswordSaving] = useState(false);
+  const { setTheme } = useTheme();
 
   const userDocRef = useMemoFirebase(() => {
     if (!user) return null;
@@ -161,18 +163,20 @@ export default function SettingsPage() {
                 <CardDescription>Customise the look and feel of your StudyVerse.</CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="flex items-center justify-between p-4 rounded-lg bg-background/50 max-w-md">
-                    <div className="flex items-center gap-2">
-                        <Sun className="h-5 w-5 text-muted-foreground" />
-                        <span className="text-sm">Light Mode</span>
-                    </div>
-                    <Switch disabled />
-                    <div className="flex items-center gap-2">
-                         <span className="text-sm">Dark Mode</span>
-                        <Moon className="h-5 w-5 text-primary" />
-                    </div>
+                <div className="flex items-center gap-4">
+                  <Button variant="outline" onClick={() => setTheme('light')}>
+                    <Sun className="mr-2 h-4 w-4" />
+                    Light
+                  </Button>
+                  <Button variant="outline" onClick={() => setTheme('dark')}>
+                    <Moon className="mr-2 h-4 w-4" />
+                    Dark
+                  </Button>
+                  <Button variant="outline" onClick={() => setTheme('system')}>
+                    <Monitor className="mr-2 h-4 w-4" />
+                    System
+                  </Button>
                 </div>
-                 <p className="text-xs text-muted-foreground mt-2">Theme switching is coming soon!</p>
             </CardContent>
         </Card>
 
