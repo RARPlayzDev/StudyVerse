@@ -1,10 +1,14 @@
 'use client';
+import { useMemo } from 'react';
 import PageTitle from "@/components/common/page-title";
 import KanbanBoard from "@/components/planner/kanban-board";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { taskCompletionData } from "@/lib/placeholder-data";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where, Timestamp } from 'firebase/firestore';
+import type { Task } from '@/lib/types';
+import { subDays, eachDayOfInterval, format, isSameDay, startOfDay } from 'date-fns';
 
 const chartConfig = {
     completed: {
@@ -14,6 +18,38 @@ const chartConfig = {
 }
 
 export default function PlannerPage() {
+    const { user } = useUser();
+    const firestore = useFirestore();
+
+    const tasksQuery = useMemoFirebase(() => {
+        if (!user) return null;
+        const sevenDaysAgo = Timestamp.fromDate(subDays(startOfDay(new Date()), 6));
+        return query(
+            collection(firestore, 'users', user.uid, 'tasks'),
+            where('status', '==', 'done'),
+            where('dueDate', '>=', sevenDaysAgo.toDate().toISOString())
+        );
+    }, [firestore, user]);
+
+    const { data: completedTasks } = useCollection<Task>(tasksQuery);
+    
+    const taskCompletionData = useMemo(() => {
+        const last7Days = eachDayOfInterval({
+          start: subDays(new Date(), 6),
+          end: new Date(),
+        });
+
+        return last7Days.map(day => {
+            const tasksDoneOnDay = completedTasks?.filter(task => 
+                isSameDay(new Date(task.dueDate), day)
+            ).length || 0;
+            return {
+                date: format(day, 'MMM d'),
+                completed: tasksDoneOnDay,
+            };
+        });
+    }, [completedTasks]);
+
     return (
         <div>
             <PageTitle title="Study Planner" subtitle="Organize your tasks and conquer your goals." />
@@ -35,7 +71,7 @@ export default function PlannerPage() {
                                 </defs>
                                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                                 <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
-                                <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+                                <YAxis allowDecimals={false} tickLine={false} axisLine={false} tickMargin={8} />
                                 <ChartTooltip content={<ChartTooltipContent />} cursor={false} />
                                 <Area type="monotone" dataKey="completed" stroke="var(--color-completed)" fillOpacity={1} fill="url(#colorCompleted)" />
                             </AreaChart>

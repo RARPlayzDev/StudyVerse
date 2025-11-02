@@ -13,9 +13,10 @@ export type User = {
 
 export type Task = {
   id: string;
+  userId: string;
   title: string;
   subject: string;
-  dueDate: string;
+  dueDate: string; // Storing as ISO string e.g. .toISOString()
   priority: 'low' | 'medium' | 'high';
   status: 'todo' | 'inprogress' | 'done';
 };

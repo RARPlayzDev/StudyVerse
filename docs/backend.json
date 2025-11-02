@@ -115,9 +115,10 @@
           "type": "string",
           "description": "The priority of the task (e.g., high, medium, low)."
         },
-        "completed": {
-          "type": "boolean",
-          "description": "Indicates whether the task is completed."
+        "status": {
+          "type": "string",
+          "description": "The current status of the task.",
+          "enum": ["todo", "inprogress", "done"]
         }
       },
       "required": [
@@ -127,7 +128,7 @@
         "subject",
         "dueDate",
         "priority",
-        "completed"
+        "status"
       ]
     },
     "Note": {
