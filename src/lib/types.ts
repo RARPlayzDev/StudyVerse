@@ -16,6 +16,7 @@ export type Task = {
   userId: string;
   title: string;
   subject: string;
+  startDate: string; // Storing as ISO string e.g. .toISOString()
   dueDate: string; // Storing as ISO string e.g. .toISOString()
   priority: 'low' | 'medium' | 'high';
   status: 'todo' | 'inprogress' | 'done';

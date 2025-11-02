@@ -18,9 +18,14 @@ import { useEffect } from 'react';
 const taskFormSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters.'),
   subject: z.string().min(2, 'Subject is required.'),
+  startDate: z.date({ required_error: 'Start date is required.' }),
   dueDate: z.date({ required_error: 'Due date is required.' }),
   priority: z.enum(['low', 'medium', 'high']),
+}).refine(data => data.dueDate >= data.startDate, {
+  message: "End date cannot be earlier than start date.",
+  path: ["dueDate"],
 });
+
 
 type TaskFormValues = z.infer<typeof taskFormSchema>;
 
@@ -37,6 +42,7 @@ export function TaskDialog({ isOpen, setIsOpen, task, onSave }: TaskDialogProps)
     defaultValues: {
       title: '',
       subject: '',
+      startDate: new Date(),
       dueDate: new Date(),
       priority: 'medium',
     },
@@ -48,6 +54,7 @@ export function TaskDialog({ isOpen, setIsOpen, task, onSave }: TaskDialogProps)
             form.reset({
                 title: task.title,
                 subject: task.subject,
+                startDate: task.startDate ? new Date(task.startDate) : new Date(),
                 dueDate: new Date(task.dueDate),
                 priority: task.priority,
             });
@@ -55,6 +62,7 @@ export function TaskDialog({ isOpen, setIsOpen, task, onSave }: TaskDialogProps)
             form.reset({
                 title: '',
                 subject: '',
+                startDate: new Date(),
                 dueDate: new Date(),
                 priority: 'medium',
             });
@@ -67,6 +75,7 @@ export function TaskDialog({ isOpen, setIsOpen, task, onSave }: TaskDialogProps)
     onSave({
         id: task?.id,
         ...values,
+        startDate: values.startDate.toISOString().split('T')[0],
         dueDate: values.dueDate.toISOString().split('T')[0],
     });
     setIsOpen(false);
@@ -109,40 +118,76 @@ export function TaskDialog({ isOpen, setIsOpen, task, onSave }: TaskDialogProps)
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="dueDate"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Due Date</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={'outline'}
-                          className={cn(
-                            'w-full pl-3 text-left font-normal',
-                            !field.value && 'text-muted-foreground'
-                          )}
-                        >
-                          {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+               <FormField
+                control={form.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Start Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={'outline'}
+                            className={cn(
+                              'w-full pl-3 text-left font-normal',
+                              !field.value && 'text-muted-foreground'
+                            )}
+                          >
+                            {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="dueDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Due Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={'outline'}
+                            className={cn(
+                              'w-full pl-3 text-left font-normal',
+                              !field.value && 'text-muted-foreground'
+                            )}
+                          >
+                            {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
              <FormField
               control={form.control}
               name="priority"

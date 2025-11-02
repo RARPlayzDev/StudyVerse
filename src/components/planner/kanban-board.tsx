@@ -11,6 +11,7 @@ import { Edit, MoreVertical, PlusCircle, Trash, CheckCircle, Circle, Loader } fr
 import { TaskDialog } from './task-dialog';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { cn } from '@/lib/utils';
 
 type Column = {
     title: string;
@@ -24,13 +25,21 @@ const columns: Column[] = [
 ];
 
 function TaskCard({ task, onEdit, onStatusChange, onDelete }: { task: Task; onEdit: () => void; onStatusChange: (status: Task['status']) => void; onDelete: () => void; }) {
+    const isTodo = task.status === 'todo';
+    
     return (
-        <Card className="mb-4 bg-background/50 hover:bg-background/80 transition-colors">
+        <Card 
+            className={cn(
+                "mb-4 bg-background/50 transition-colors",
+                isTodo ? "hover:bg-background/80 cursor-pointer" : "hover:bg-background/70"
+            )}
+            onClick={isTodo ? onEdit : undefined}
+        >
             <CardContent className="p-4">
                 <div className="flex justify-between items-start">
                     <p className="font-medium mb-2 pr-2">{task.title}</p>
                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                            <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0">
                                 <MoreVertical className="h-4 w-4" />
                            </Button>
@@ -102,7 +111,7 @@ export default function KanbanBoard() {
         setDialogOpen(true);
     };
 
-    const handleSaveTask = (savedTask: Omit<Task, 'id' | 'userId'> & { id?: string }) => {
+    const handleSaveTask = (savedTask: Omit<Task, 'id' | 'userId' | 'status'> & { id?: string }) => {
         if (!user) return;
 
         if (savedTask.id) {
@@ -174,11 +183,11 @@ export default function KanbanBoard() {
 
     return (
         <>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
                 {columns.map(column => {
                     const columnTasks = tasksByStatus[column.status];
                     return (
-                        <div key={column.status} className="rounded-lg">
+                        <div key={column.status} className="rounded-lg flex flex-col h-full">
                             <div className="flex justify-between items-center mb-4 px-1">
                                 <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
                                     {getColumnIcon(column.status)}
@@ -192,8 +201,8 @@ export default function KanbanBoard() {
                                     </Button>
                                 )}
                             </div>
-                            <Card className="bg-card/30 backdrop-blur-sm border-border/30 min-h-[500px] p-4">
-                                <CardContent className="p-0">
+                            <Card className="bg-card/30 backdrop-blur-sm border-border/30 p-4 flex-1">
+                                <CardContent className="p-0 h-full">
                                     {isLoading && <p>Loading...</p>}
                                     {!isLoading && columnTasks.map(task => 
                                         <TaskCard 
@@ -201,11 +210,11 @@ export default function KanbanBoard() {
                                             task={task} 
                                             onEdit={() => handleEditTask(task)}
                                             onStatusChange={(newStatus) => handleStatusChange(task.id, newStatus)}
-                                            onDelete={() => handleDeleteTask(task.id)}
+                                            onDelete={(e) => { e.stopPropagation(); handleDeleteTask(task.id); }}
                                         />
                                     )}
                                      {!isLoading && columnTasks.length === 0 && (
-                                        <div className="text-center text-muted-foreground p-4 text-sm">
+                                        <div className="flex items-center justify-center h-full text-center text-muted-foreground p-4 text-sm">
                                             {column.status === 'done' ? "Let's get some work done!" : `No tasks in ${column.title.toLowerCase()}.`}
                                         </div>
                                     )}
