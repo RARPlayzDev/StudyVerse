@@ -33,7 +33,6 @@ const mainNavItems = [
 
 const bottomNavItems = [
   { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
-  { href: '/', icon: LogOut, label: 'Logout' },
 ];
 
 export default function StudentSidebar() {

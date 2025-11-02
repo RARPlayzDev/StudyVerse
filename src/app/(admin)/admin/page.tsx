@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { adminContentStats, adminEngagementStats, adminUserStats, placeholderUsers, weeklyFocusData } from "@/lib/placeholder-data";
 import { Archive, BarChart, Users, Timer, CheckCircle, Flame } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { CartesianGrid, Bar as RechartsBar, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { CartesianGrid, Bar as RechartsBar, ResponsiveContainer, XAxis, YAxis, BarChart as RechartsBarChart } from "recharts";
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -25,11 +25,11 @@ const StatCard = ({ title, value, change, icon }: { title: string, value: string
     </Card>
 )
 
-export default function AdminDashboard() {
+export default function AdminPanel() {
     const topStudents = placeholderUsers.filter(u => u.role === 'student').slice(0, 5);
     return (
         <div>
-            <PageTitle title="Admin Dashboard" subtitle="Overview of the StudyVerse ecosystem." />
+            <PageTitle title="Admin Panel" subtitle="Overview of the StudyVerse ecosystem." />
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-8">
                 <Card className="flex flex-col bg-card/50 backdrop-blur-sm border-border/50">

@@ -23,7 +23,7 @@ import { useAuth } from '@/firebase';
 import { useRouter } from 'next/navigation';
 
 const navItems = [
-  { href: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/admin', icon: LayoutDashboard, label: 'Admin Panel' },
   { href: '/admin/users', icon: Users, label: 'User Management' },
   { href: '/admin/content', icon: Archive, label: 'Content' },
   { href: '/admin/collab', icon: Users, label: 'Collab Rooms' },
