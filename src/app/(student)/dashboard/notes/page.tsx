@@ -18,12 +18,14 @@ import {
 import { useFirestore, useCollection, useUser, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import { format } from 'date-fns';
+import UploadNoteDialog from '@/components/notes/upload-note-dialog';
 
 const NOTE_DUMMY_CONTENT = "Quantum mechanics is a fundamental theory in physics that provides a description of the physical properties of nature at the scale of atoms and subatomic particles. It is the foundation of all quantum physics including quantum chemistry, quantum field theory, quantum technology, and quantum information science. Classical physics, the description of physics that existed before the theory of relativity and quantum mechanics, describes nature at ordinary (macroscopic) scale. Most theories in classical physics can be derived from quantum mechanics as an approximation valid at large (macroscopic) scale.";
 
 export default function NotesPage() {
     const [selectedNote, setSelectedNote] = useState<Note | null>(null);
     const [isSummaryOpen, setSummaryOpen] = useState(false);
+    const [isUploadOpen, setUploadOpen] = useState(false);
     const { user } = useUser();
     const firestore = useFirestore();
 
@@ -46,7 +48,7 @@ export default function NotesPage() {
       <div>
         <div className="flex justify-between items-center mb-6">
             <PageTitle title="Notes Hub" subtitle="Share, discover, and summarize study materials." className="mb-0" />
-            <Button>
+            <Button onClick={() => setUploadOpen(true)}>
                 <Upload className="w-4 h-4 mr-2" />
                 Upload Note
             </Button>
@@ -65,10 +67,10 @@ export default function NotesPage() {
                                 <SelectValue placeholder="Filter by Subject" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="calculus">Calculus</SelectItem>
-                                <SelectItem value="history">History</SelectItem>
+                                <SelectItem value="maths">Maths</SelectItem>
                                 <SelectItem value="physics">Physics</SelectItem>
                                 <SelectItem value="chemistry">Chemistry</SelectItem>
+                                <SelectItem value="python">Python</SelectItem>
                             </SelectContent>
                         </Select>
                         <Select>
@@ -129,9 +131,11 @@ export default function NotesPage() {
                     <BrainCircuit className="w-4 h-4 mr-2" />
                     AI Summary
                 </Button>
-                <Button size="sm" className="w-full">
+                <Button size="sm" className="w-full" asChild>
+                  <a href={note.fileUrl} target="_blank" rel="noopener noreferrer">
                     <Download className="w-4 h-4 mr-2" />
                     Download
+                  </a>
                 </Button>
               </div>
             </Card>
@@ -142,10 +146,12 @@ export default function NotesPage() {
           <Card className="bg-card/50 backdrop-blur-sm border-border/50">
             <CardContent className="p-10 text-center text-muted-foreground">
               <p>No notes found in your hub.</p>
-              <Button variant="link" className="text-accent">Upload your first note</Button>
+              <Button variant="link" className="text-accent" onClick={() => setUploadOpen(true)}>Upload your first note</Button>
             </CardContent>
           </Card>
         )}
+
+        <UploadNoteDialog open={isUploadOpen} onOpenChange={setUploadOpen} />
 
         {selectedNote && (
             <NoteSummaryDialog 
