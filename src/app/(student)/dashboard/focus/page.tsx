@@ -275,10 +275,15 @@ export default function FocusPage() {
               <CardTitle>Focus Music</CardTitle>
               <CardDescription>Lofi beats to study to.</CardDescription>
             </CardHeader>
-            <CardContent className="text-center text-muted-foreground flex flex-col items-center justify-center h-48 gap-4">
-              <Music4 className="w-10 h-10 text-muted-foreground/50" />
-              <p className="text-sm">Music integration with Spotify and other services is coming soon!</p>
-              <p className="text-xs">Let us know what service you'd like to see first.</p>
+            <CardContent className="aspect-video">
+              <iframe 
+                className="w-full h-full rounded-md"
+                src="https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&mute=1&loop=1" 
+                title="YouTube video player" 
+                frameBorder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowFullScreen>
+              </iframe>
             </CardContent>
           </Card>
 
