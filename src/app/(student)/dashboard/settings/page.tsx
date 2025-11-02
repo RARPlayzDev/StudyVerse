@@ -26,7 +26,7 @@ import { useAuth, useDoc, useFirestore, useUser, useMemoFirebase } from '@/fireb
 import { doc, updateDoc } from 'firebase/firestore';
 import type { User as UserType } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Moon, Sun, Monitor } from 'lucide-react';
+import { Loader2, Moon, Sun } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { updateProfile } from 'firebase/auth';
