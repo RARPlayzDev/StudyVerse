@@ -126,8 +126,7 @@ export default function SettingsPage() {
                     <AvatarFallback className="text-2xl">{userData?.name?.charAt(0) || user?.email?.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div>
-                     <Button>Change Avatar</Button>
-                     <p className="text-xs text-muted-foreground mt-2">JPG, GIF or PNG. 1MB max.</p>
+                     <p className="text-sm text-muted-foreground">Avatar customization is coming soon.</p>
                 </div>
             </div>
 
