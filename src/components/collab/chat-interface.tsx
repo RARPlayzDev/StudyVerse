@@ -38,15 +38,16 @@ export default function ChatInterface({ messages, onSendMessage, isLoading }: Ch
 
     const getFormattedTimestamp = (timestamp: any) => {
         if (!timestamp) return 'sending...';
-        // Firestore Timestamps have a toDate() method, JS Dates do not.
+        
+        let date: Date;
         if (typeof timestamp.toDate === 'function') {
-            return formatDistanceToNow(timestamp.toDate(), { addSuffix: true });
+            date = timestamp.toDate();
+        } else if (timestamp instanceof Date) {
+            date = timestamp;
+        } else {
+             return 'just now';
         }
-        // It's likely a JS Date object.
-        if (timestamp instanceof Date) {
-            return formatDistanceToNow(timestamp, { addSuffix: true });
-        }
-        return 'just now';
+        return formatDistanceToNow(date, { addSuffix: true });
     }
 
     return (
@@ -62,16 +63,21 @@ export default function ChatInterface({ messages, onSendMessage, isLoading }: Ch
                         )}
                         <div className={cn("grid gap-1 max-w-[75%]", message.senderId === currentUser?.uid ? 'items-end' : 'items-start')}>
                             <div className="font-semibold text-sm">{message.senderId === currentUser?.uid ? 'You' : message.senderName}</div>
-                            <div className={cn("p-3 rounded-lg", message.senderId === currentUser?.uid ? 'bg-primary text-primary-foreground' : 'bg-card/80')}>
+                            <div className={cn(
+                                "p-3 rounded-lg relative", 
+                                message.senderId === currentUser?.uid 
+                                    ? 'bg-primary text-primary-foreground shadow-md' 
+                                    : 'bg-background/60'
+                            )}>
                                 <p className="text-sm">{message.text}</p>
                             </div>
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-xs text-muted-foreground px-1">
                                 {getFormattedTimestamp(message.timestamp)}
                             </div>
                         </div>
                          {message.senderId === currentUser?.uid && (
                              <Avatar className="h-8 w-8">
-                                <AvatarImage src={currentUser.photoURL || undefined} data-ai-hint="person portrait" />
+                                <AvatarImage src={currentUser.photoURL || `https://picsum.photos/seed/${currentUser.uid}/100/100`} data-ai-hint="person portrait" />
                                 <AvatarFallback>{currentUser.displayName?.charAt(0) || currentUser.email?.charAt(0) || 'U'}</AvatarFallback>
                             </Avatar>
                         )}
@@ -85,19 +91,19 @@ export default function ChatInterface({ messages, onSendMessage, isLoading }: Ch
                         </Avatar>
                         <div className="grid gap-1">
                             <div className="font-semibold text-sm">AI Mentor</div>
-                            <div className="p-3 rounded-lg bg-card/80">
+                            <div className="p-3 rounded-lg bg-background/60">
                                 <p className="text-sm text-foreground animate-pulse">...</p>
                             </div>
                         </div>
                     </div>
                 )}
             </div>
-            <div className="p-4 border-t border-border/50 bg-background/50">
+            <div className="p-4 border-t border-border/50 bg-background/30">
                  <form className="relative" onSubmit={handleSendMessage}>
                     <Input
                         name="message"
                         placeholder={"Type your message..."}
-                        className="pr-12 bg-background/50"
+                        className="pr-12 bg-background/80"
                         autoComplete="off"
                         disabled={isLoading}
                     />

@@ -48,7 +48,6 @@ interface CreateCollabRoomDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-// Function to generate a random 6-character code
 const generateInviteCode = () => {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 };
@@ -97,7 +96,7 @@ export default function CreateCollabRoomDialog({
         createdAt: serverTimestamp(),
       };
 
-      await addDoc(roomsCollection, newRoom).catch((err) => {
+      const docRef = await addDoc(roomsCollection, newRoom).catch((err) => {
         const permissionError = new FirestorePermissionError({
           path: roomsCollection.path,
           operation: 'create',
@@ -108,8 +107,8 @@ export default function CreateCollabRoomDialog({
       });
 
       toast({
-        title: 'Group Created!',
-        description: `${values.topic} is ready for your study session.`,
+        title: 'Room Created!',
+        description: 'Share this code with friends to join.',
       });
 
       setInviteCode(newInviteCode);
@@ -120,7 +119,7 @@ export default function CreateCollabRoomDialog({
       console.error('Failed to create room:', error);
       toast({
         title: 'Creation Failed',
-        description: 'There was an error creating your group. Please try again.',
+        description: 'There was an error creating your room. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -133,10 +132,9 @@ export default function CreateCollabRoomDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-md bg-slate-900/80 backdrop-blur-md border-slate-700">
           <DialogHeader>
-            <DialogTitle>Create a Private Study Group</DialogTitle>
+            <DialogTitle>Create a Private Study Room</DialogTitle>
             <DialogDescription>
-              Set a topic and description for your new group. An invite code
-              will be generated for you to share.
+              Set a topic and description. An invite code will be generated for you to share.
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
@@ -146,7 +144,7 @@ export default function CreateCollabRoomDialog({
                 name="topic"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Group Topic</FormLabel>
+                    <FormLabel>Room Topic</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="e.g., Physics Midterm Prep"
@@ -165,7 +163,7 @@ export default function CreateCollabRoomDialog({
                     <FormLabel>Description</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="A short description of what this group is for."
+                        placeholder="A short description of what this room is for."
                         {...field}
                       />
                     </FormControl>
@@ -189,7 +187,7 @@ export default function CreateCollabRoomDialog({
                       Creating...
                     </>
                   ) : (
-                    'Create Group'
+                    'Create Room'
                   )}
                 </Button>
               </DialogFooter>

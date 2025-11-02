@@ -36,9 +36,15 @@ import { Loader2 } from 'lucide-react';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import type { CollabRoom } from '@/lib/types';
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp"
+
 
 const joinRoomSchema = z.object({
-  inviteCode: z.string().length(6, 'Invite code must be 6 characters long.'),
+  inviteCode: z.string().min(6, 'Invite code must be 6 characters long.'),
 });
 
 type JoinRoomFormValues = z.infer<typeof joinRoomSchema>;
@@ -68,7 +74,7 @@ export default function JoinCollabRoomDialog({
     if (!user) {
       toast({
         title: 'Authentication Error',
-        description: 'You must be logged in to join a group.',
+        description: 'You must be logged in to join a room.',
         variant: 'destructive',
       });
       return;
@@ -90,7 +96,7 @@ export default function JoinCollabRoomDialog({
       if (querySnapshot.empty) {
         toast({
           title: 'Invalid Code',
-          description: 'No private group found with that invite code.',
+          description: 'No private room found with that invite code.',
           variant: 'destructive',
         });
         setIsJoining(false);
@@ -104,7 +110,7 @@ export default function JoinCollabRoomDialog({
       if (roomData.members.includes(user.uid)) {
         toast({
             title: 'Already a Member',
-            description: 'You are already in this study group.',
+            description: 'You are already in this study room.',
         });
         form.reset();
         onOpenChange(false);
@@ -126,7 +132,7 @@ export default function JoinCollabRoomDialog({
 
       toast({
         title: 'Success!',
-        description: `You have joined the group: ${roomData.topic}.`,
+        description: `You have joined the room: ${roomData.topic}.`,
       });
 
       form.reset();
@@ -136,7 +142,7 @@ export default function JoinCollabRoomDialog({
       toast({
         title: 'Join Failed',
         description:
-          'There was an error joining the group. Please check the code and try again.',
+          'There was an error joining the room. Please check the code and try again.',
         variant: 'destructive',
       });
     } finally {
@@ -148,26 +154,27 @@ export default function JoinCollabRoomDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md bg-slate-900/80 backdrop-blur-md border-slate-700">
         <DialogHeader>
-          <DialogTitle>Join a Private Group</DialogTitle>
+          <DialogTitle>Join a Private Room</DialogTitle>
           <DialogDescription>
-            Enter the 6-character invite code to join a study group.
+            Enter the 6-character invite code to join a study room.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
               name="inviteCode"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="flex flex-col items-center">
                   <FormLabel>Invite Code</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="e.g., A1B2C3"
-                      {...field}
-                      onChange={e => field.onChange(e.target.value.toUpperCase())}
-                      maxLength={6}
-                    />
+                     <InputOTP maxLength={6} {...field} render={({slots}) => (
+                        <InputOTPGroup>
+                            {slots.map((slot, index) => (
+                                <InputOTPSlot key={index} {...slot} />
+                            ))}
+                        </InputOTPGroup>
+                     )} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -189,7 +196,7 @@ export default function JoinCollabRoomDialog({
                     Joining...
                   </>
                 ) : (
-                  'Join Group'
+                  'Join Room'
                 )}
               </Button>
             </DialogFooter>

@@ -55,6 +55,7 @@ export type CollabRoom = {
 
 export type Message = {
   id: string;
+  roomId: string;
   senderId: string;
   senderName: string;
   senderAvatar?: string;
