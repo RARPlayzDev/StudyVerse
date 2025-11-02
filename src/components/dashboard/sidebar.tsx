@@ -32,8 +32,8 @@ const mainNavItems = [
 ];
 
 const bottomNavItems = [
-  { href: '#', icon: Settings, label: 'Settings' },
-  { href: '#', icon: User, label: 'Profile' },
+  { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
+  { href: '/dashboard/profile', icon: User, label: 'Profile' },
   { href: '/', icon: LogOut, label: 'Logout' },
 ];
 
@@ -44,7 +44,7 @@ export default function StudentSidebar() {
     const isActive = pathname === item.href;
     const Icon = item.icon;
     return (
-      <Tooltip key={item.href}>
+      <Tooltip key={item.label}>
         <TooltipTrigger asChild>
           <Link
             href={item.href}
