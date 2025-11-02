@@ -124,6 +124,11 @@
           "type": "string",
           "description": "The current status of the task.",
           "enum": ["todo", "inprogress", "done", "overdue"]
+        },
+        "doneAt": {
+          "type": ["string", "null"],
+          "description": "Timestamp when the task was moved to 'done'.",
+          "format": "date-time"
         }
       },
       "required": [
@@ -499,5 +504,3 @@
     "reasoning": "The Firestore data structure is designed to ensure authorization independence, clarity, and scalability, aligning with the core principles outlined. It leverages path-based ownership for private user data and membership maps for collaborative data. Authorization independence is achieved through denormalization. Specifically, the `members` array from the `CollabRoom` is duplicated in the `ChatMessage` documents to eliminate the need for `get()` calls in security rules, allowing messages to be created atomically. Segregation is used to ensure that all documents in a collection share the same security posture, which simplifies security rules. The structure efficiently supports required QAPs by using path-based ownership for user-specific data like `FocusSession`, `Task`, `Note`, and dedicated collections with membership maps for collaborative resources like `CollabRoom` and its `ChatMessage`. Global roles are managed using the presence of documents in dedicated collections (e.g., `roles_admin/{uid}`). This entire structure minimizes complexity and enhances debuggability."
   }
 }
-
-    

@@ -2,7 +2,7 @@
 'use client';
 import { useMemo, useState, useEffect } from 'react';
 import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
-import { collection, doc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, addDoc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 import type { Task } from "@/lib/types";
 import { Card, CardContent } from "../ui/card";
 import { Badge } from "../ui/badge";
@@ -32,6 +32,7 @@ function TaskCard({ task, onEdit, onDelete, onStatusChange }: { task: Task; onEd
     return (
         <Card 
             className="mb-4 bg-background/50 transition-colors hover:bg-background/80"
+            onClick={onEdit}
         >
             <CardContent className="p-4">
                 <div className="flex justify-between items-start">
@@ -43,15 +44,15 @@ function TaskCard({ task, onEdit, onDelete, onStatusChange }: { task: Task; onEd
                            </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={onEdit}><Edit className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
-                             <DropdownMenuSub>
-                                <DropdownMenuSubTrigger>Move to</DropdownMenuSubTrigger>
+                            <DropdownMenuItem onClick={(e) => {e.stopPropagation(); onEdit();}}><Edit className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
+                            <DropdownMenuSub>
+                                <DropdownMenuSubTrigger onClick={(e) => e.stopPropagation()}>Move to</DropdownMenuSubTrigger>
                                 <DropdownMenuSubContent>
                                     {columns.map(col => (
                                         <DropdownMenuItem 
                                             key={col.status}
                                             disabled={task.status === col.status}
-                                            onClick={() => onStatusChange(col.status)}
+                                            onClick={(e) => {e.stopPropagation(); onStatusChange(col.status)}}
                                         >
                                             {col.title}
                                         </DropdownMenuItem>
@@ -88,15 +89,23 @@ export default function KanbanBoard() {
     useEffect(() => {
         if (tasks && user) {
             const today = startOfDay(new Date());
+            const now = new Date();
+            const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+
             tasks.forEach(task => {
+                // Auto-move to overdue
                 const isOverdue = isPast(new Date(task.dueDate)) && !isSameDay(new Date(task.dueDate), today);
                 if ((task.status === 'inprogress' || task.status === 'todo') && isOverdue) {
                      if (task.status !== 'overdue') {
                         handleStatusChange(task.id, 'overdue');
                     }
                 } else if (task.status === 'overdue' && !isOverdue) {
-                    // If a task was overdue but date is changed to future, move it back to 'todo'
                     handleStatusChange(task.id, 'todo');
+                }
+
+                // Auto-delete from done
+                if (task.status === 'done' && task.doneAt && task.doneAt.toDate() < oneHourAgo) {
+                    handleDeleteTask(task.id);
                 }
             });
         }
@@ -153,7 +162,8 @@ export default function KanbanBoard() {
             const newTaskData = {
                 ...data,
                 userId: user.uid,
-                status: 'todo' as const
+                status: 'todo' as const,
+                doneAt: null,
             }
             addDoc(collectionRef, newTaskData).catch(err => {
                 const permissionError = new FirestorePermissionError({
@@ -169,7 +179,16 @@ export default function KanbanBoard() {
     const handleStatusChange = (taskId: string, newStatus: Task['status']) => {
         if (!user) return;
         const taskRef = doc(firestore, `users/${user.uid}/tasks/${taskId}`);
-        const updateData = { status: newStatus };
+        
+        const updateData: {status: Task['status'], doneAt?: Timestamp | null} = { status: newStatus };
+
+        if (newStatus === 'done') {
+            updateData.doneAt = Timestamp.now();
+        } else {
+            // If moving out of done, we can clear the timestamp
+            updateData.doneAt = null;
+        }
+
         updateDoc(taskRef, updateData).catch(err => {
             const permissionError = new FirestorePermissionError({
                 path: taskRef.path,
@@ -243,7 +262,7 @@ export default function KanbanBoard() {
                                             ref={provided.innerRef}
                                             {...provided.droppableProps}
                                             className={cn(
-                                                "bg-card/30 backdrop-blur-sm border-border/30 p-4 flex-1 min-h-[200px] transition-colors",
+                                                "bg-card/30 backdrop-blur-sm border-border/30 p-4 flex-1 min-h-[300px] transition-colors",
                                                 snapshot.isDraggingOver && "bg-accent/20"
                                             )}
                                         >
