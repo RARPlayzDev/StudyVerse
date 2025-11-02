@@ -108,20 +108,16 @@ service cloud.firestore {
     /**
      * @description Controls access to collaboration room data.
      * @path /collabRooms/{roomId}
-     * @allow (create) - Any signed-in user can create a collaboration room.
-     * @allow (get, list) - Any signed-in user can read collaboration room data.
-     * @allow (update, delete) - Only members of the room can update or delete it.
-     * @principle Enforces shared access based on membership list.
+     * @allow (read) - Any authenticated user can see public rooms.
+     * @allow (write) - Write access is restricted (will be admin-only).
+     * @principle Prepares for admin-only room creation.
      */
     match /collabRooms/{roomId} {
-      function isRoomCreator() {
-        return request.auth != null && request.auth.uid == resource.data.createdBy;
+       function isAdmin() {
+        return request.auth != null && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
       }
-      allow get: if request.auth != null;
-      allow list: if request.auth != null;
-      allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
-      allow update: if isRoomCreator();
-      allow delete: if isRoomCreator();
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
     }
 
     /**

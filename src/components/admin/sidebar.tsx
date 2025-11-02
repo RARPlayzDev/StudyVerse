@@ -24,6 +24,7 @@ const navItems = [
   { href: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/admin/users', icon: Users, label: 'User Management' },
   { href: '/admin/content', icon: Archive, label: 'Content' },
+  { href: '/admin/collab', icon: Users, label: 'Collab Rooms' },
   { href: '/admin/reports', icon: BarChart3, label: 'AI Reports' },
 ];
 
