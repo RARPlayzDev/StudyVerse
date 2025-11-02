@@ -172,10 +172,6 @@ export default function SettingsPage() {
                     <Moon className="mr-2 h-4 w-4" />
                     Dark
                   </Button>
-                  <Button variant="outline" onClick={() => setTheme('system')}>
-                    <Monitor className="mr-2 h-4 w-4" />
-                    System
-                  </Button>
                 </div>
             </CardContent>
         </Card>
