@@ -33,7 +33,6 @@ const mainNavItems = [
 
 const bottomNavItems = [
   { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
-  { href: '/dashboard/profile', icon: User, label: 'Profile' },
   { href: '/', icon: LogOut, label: 'Logout' },
 ];
 
