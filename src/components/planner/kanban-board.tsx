@@ -24,7 +24,7 @@ const columns: Column[] = [
     { title: "Done", status: "done" },
 ];
 
-function TaskCard({ task, onEdit, onStatusChange, onDelete }: { task: Task; onEdit: () => void; onStatusChange: (status: Task['status']) => void; onDelete: () => void; }) {
+function TaskCard({ task, onEdit, onStatusChange, onDelete }: { task: Task; onEdit: () => void; onStatusChange: (status: Task['status']) => void; onDelete: (event: React.MouseEvent) => void; }) {
     const isTodo = task.status === 'todo';
     
     return (
@@ -187,7 +187,7 @@ export default function KanbanBoard() {
                 {columns.map(column => {
                     const columnTasks = tasksByStatus[column.status];
                     return (
-                        <div key={column.status} className="rounded-lg flex flex-col h-full">
+                        <div key={column.status} className="rounded-lg flex flex-col">
                             <div className="flex justify-between items-center mb-4 px-1">
                                 <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
                                     {getColumnIcon(column.status)}
@@ -202,7 +202,7 @@ export default function KanbanBoard() {
                                 )}
                             </div>
                             <Card className="bg-card/30 backdrop-blur-sm border-border/30 p-4 flex-1">
-                                <CardContent className="p-0 h-full">
+                                <CardContent className="p-0">
                                     {isLoading && <p>Loading...</p>}
                                     {!isLoading && columnTasks.map(task => 
                                         <TaskCard 
