@@ -208,6 +208,15 @@
           "type": "string",
           "description": "The topic of the study room."
         },
+        "description": {
+            "type": "string",
+            "description": "A short description of the room's purpose."
+        },
+        "type": {
+            "type": "string",
+            "enum": ["public", "private"],
+            "description": "The visibility and access type of the room."
+        },
         "createdBy": {
           "type": "string",
           "description": "Reference to User. (Relationship: User 1:N CollabRoom). The user ID of the room creator."
@@ -223,6 +232,8 @@
       "required": [
         "id",
         "topic",
+        "description",
+        "type",
         "createdBy",
         "members"
       ]

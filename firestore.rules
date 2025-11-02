@@ -108,16 +108,35 @@ service cloud.firestore {
     /**
      * @description Controls access to collaboration room data.
      * @path /collabRooms/{roomId}
-     * @allow (read) - Any authenticated user can see public rooms.
-     * @allow (write) - Write access is restricted (will be admin-only).
-     * @principle Prepares for admin-only room creation.
      */
     match /collabRooms/{roomId} {
-       function isAdmin() {
+      function isAdmin() {
         return request.auth != null && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
       }
-      allow read: if request.auth != null;
-      allow write: if isAdmin();
+      function isMember() {
+        return request.auth != null && resource.data.members.hasAny([request.auth.uid]);
+      }
+      
+      // Read: Anyone can read public rooms. Members can read private rooms they belong to.
+      allow read: if request.auth != null && (resource.data.type == 'public' || isMember());
+      
+      // Create: Admins can create public rooms. Any user can create a private room.
+      allow create: if request.auth != null && (
+        (request.resource.data.type == 'public' && isAdmin()) ||
+        (request.resource.data.type == 'private' && request.resource.data.createdBy == request.auth.uid)
+      );
+
+      // Update: Admins can update public rooms. The creator can update a private room.
+      allow update: if request.auth != null && (
+        (resource.data.type == 'public' && isAdmin()) ||
+        (resource.data.type == 'private' && resource.data.createdBy == request.auth.uid)
+      );
+
+      // Delete: Admins can delete public rooms. The creator can delete a private room.
+      allow delete: if request.auth != null && (
+        (resource.data.type == 'public' && isAdmin()) ||
+        (resource.data.type == 'private' && resource.data.createdBy == request.auth.uid)
+      );
     }
 
     /**

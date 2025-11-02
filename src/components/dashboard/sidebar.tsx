@@ -8,6 +8,7 @@ import {
   NotebookText,
   Settings,
   User,
+  Users,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -26,6 +27,7 @@ const mainNavItems = [
   { href: '/dashboard/focus', icon: Focus, label: 'Focus' },
   { href: '/dashboard/planner', icon: Kanban, label: 'Planner' },
   { href: '/dashboard/notes', icon: NotebookText, label: 'Notes Hub' },
+  { href: '/dashboard/collab', icon: Users, label: 'Collab Space' },
   { href: '/dashboard/mentor', icon: BrainCircuit, label: 'AI Mentor' },
 ];
 
