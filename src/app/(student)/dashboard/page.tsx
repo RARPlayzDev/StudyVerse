@@ -1,0 +1,187 @@
+import Link from "next/link"
+import {
+  Activity,
+  ArrowUpRight,
+  BookOpen,
+  CircleUser,
+  CreditCard,
+  DollarSign,
+  Menu,
+  Package2,
+  Search,
+  Users,
+  Timer,
+} from "lucide-react"
+
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import PageTitle from "@/components/common/page-title"
+import { placeholderNotes, placeholderTasks } from "@/lib/placeholder-data"
+
+export default function Dashboard() {
+  const upcomingTasks = placeholderTasks.filter(t => t.status !== 'done').slice(0, 3);
+  const recentNotes = placeholderNotes.slice(0, 3);
+
+  return (
+    <>
+      <PageTitle title="Dashboard" subtitle="Here's a snapshot of your studyverse." />
+      <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
+        <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Focus Time Today
+            </CardTitle>
+            <Timer className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">1h 45m</div>
+            <p className="text-xs text-muted-foreground">
+              +25m from yesterday
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Tasks Due Soon
+            </CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{placeholderTasks.filter(t => t.status !== 'done').length}</div>
+            <p className="text-xs text-muted-foreground">
+              {placeholderTasks.filter(t => t.status === 'done').length} tasks completed
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">New Notes</CardTitle>
+            <BookOpen className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">+{placeholderNotes.length}</div>
+            <p className="text-xs text-muted-foreground">
+              in the last 7 days
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Collabs</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">+3</div>
+            <p className="text-xs text-muted-foreground">
+              new study rooms joined
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+      <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3 mt-8">
+        <Card className="xl:col-span-2 bg-card/50 backdrop-blur-sm border-border/50">
+          <CardHeader className="flex flex-row items-center">
+            <div className="grid gap-2">
+              <CardTitle>Upcoming Tasks</CardTitle>
+              <CardDescription>
+                Stay on top of your deadlines.
+              </CardDescription>
+            </div>
+            <Button asChild size="sm" className="ml-auto gap-1">
+              <Link href="/dashboard/planner">
+                View All
+                <ArrowUpRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Task</TableHead>
+                  <TableHead className="hidden xl:table-column">
+                    Subject
+                  </TableHead>
+                  <TableHead className="hidden md:table-cell">
+                    Priority
+                  </TableHead>
+                  <TableHead className="text-right">Due Date</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {upcomingTasks.map((task) => (
+                  <TableRow key={task.id}>
+                    <TableCell>
+                      <div className="font-medium">{task.title}</div>
+                    </TableCell>
+                    <TableCell className="hidden xl:table-column">
+                      {task.subject}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      <Badge variant={task.priority === 'high' ? 'destructive' : task.priority === 'medium' ? 'secondary' : 'outline'} className="capitalize">{task.priority}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right">{task.dueDate}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+        <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+          <CardHeader>
+            <CardTitle>Recent Notes</CardTitle>
+            <CardDescription>
+              Catch up on the latest shared knowledge.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-6">
+            {recentNotes.map((note) => (
+              <div key={note.id} className="flex items-center gap-4">
+                <Avatar className="hidden h-9 w-9 sm:flex">
+                  <AvatarImage src={note.uploaderAvatar} alt="Avatar" data-ai-hint="woman portrait" />
+                  <AvatarFallback>{note.uploader.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div className="grid gap-1">
+                  <p className="text-sm font-medium leading-none">
+                    {note.title}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    by {note.uploader} in {note.subject}
+                  </p>
+                </div>
+                <div className="ml-auto font-medium text-sm">{note.date}</div>
+              </div>
+            ))}
+             <Button asChild size="sm" className="mt-2 gap-1 w-full">
+              <Link href="/dashboard/notes">
+                Explore Notes Hub
+                <ArrowUpRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    </>
+  )
+}
