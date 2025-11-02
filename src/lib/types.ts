@@ -36,7 +36,7 @@ export type FocusSession = {
   id: string;
   userId: string;
   duration: number; // in minutes
-  date: string;
+  date: Timestamp;
   taskTag: string;
 };
 

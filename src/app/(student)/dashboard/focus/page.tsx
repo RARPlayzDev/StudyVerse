@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import PageTitle from "@/components/common/page-title";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { weeklyFocusData } from "@/lib/placeholder-data";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Music4, Pause, Play, Repeat, Settings, SkipBack, SkipForward, Shuffle } from "lucide-react";
@@ -11,28 +10,90 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useFirestore, useCollection, useUser, useMemoFirebase } from '@/firebase';
+import { collection, query, where, addDoc, Timestamp } from 'firebase/firestore';
+import type { FocusSession } from "@/lib/types";
+import { subDays, format, startOfDay, eachDayOfInterval, isSameDay } from 'date-fns';
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 const chartConfig = {
   "This Week": {
     label: "This Week",
     color: "hsl(var(--primary))",
   },
-  "Last Week": {
-    label: "Last Week",
-    color: "hsl(var(--secondary))",
-  },
-}
+};
 
 export default function FocusPage() {
   const [duration, setDuration] = useState(25 * 60); // Default 25 minutes in seconds
+  const [initialDuration, setInitialDuration] = useState(25 * 60);
   const [timeLeft, setTimeLeft] = useState(duration);
   const [isActive, setIsActive] = useState(false);
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [customDuration, setCustomDuration] = useState(25);
+  const [taskTag, setTaskTag] = useState('');
+
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  const sessionsQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    const sevenDaysAgo = subDays(new Date(), 6);
+    return query(
+      collection(firestore, 'users', user.uid, 'focusSessions'),
+      where('date', '>=', Timestamp.fromDate(startOfDay(sevenDaysAgo)))
+    );
+  }, [firestore, user]);
+
+  const { data: focusSessions, isLoading: sessionsLoading } = useCollection<FocusSession>(sessionsQuery);
+
+  const weeklyFocusData = useMemo(() => {
+    const last7Days = eachDayOfInterval({
+      start: subDays(new Date(), 6),
+      end: new Date(),
+    });
+
+    const dailyTotals = last7Days.map(day => {
+      const daySessions = focusSessions?.filter(session =>
+        isSameDay(session.date.toDate(), day)
+      ) || [];
+      
+      const totalMinutes = daySessions.reduce((acc, session) => acc + session.duration, 0);
+
+      return {
+        date: format(day, 'EEE'),
+        "This Week": +(totalMinutes / 60).toFixed(2), // Convert minutes to hours
+      };
+    });
+
+    return dailyTotals;
+
+  }, [focusSessions]);
 
   useEffect(() => {
     setTimeLeft(duration);
   }, [duration]);
+
+  const saveFocusSession = () => {
+    if (!user) return;
+    const sessionData: Omit<FocusSession, 'id'> = {
+      userId: user.uid,
+      duration: Math.floor(initialDuration / 60), // save duration in minutes
+      date: Timestamp.now(),
+      taskTag: taskTag || 'General',
+    };
+    
+    const collectionRef = collection(firestore, 'users', user.uid, 'focusSessions');
+    addDoc(collectionRef, sessionData)
+      .catch((serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: collectionRef.path,
+          operation: 'create',
+          requestResourceData: sessionData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
+  };
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -41,9 +102,11 @@ export default function FocusPage() {
       interval = setInterval(() => {
         setTimeLeft((prevTime) => prevTime - 1);
       }, 1000);
-    } else if (timeLeft === 0) {
+    } else if (timeLeft === 0 && isActive) {
       setIsActive(false);
+      saveFocusSession();
       // Optional: Add a notification or sound
+      alert("Focus session complete!");
     }
 
     return () => {
@@ -71,8 +134,10 @@ export default function FocusPage() {
   const pomodoroProgress = (timeLeft / duration) * 100;
 
   const handleDurationChange = (newDuration: number) => {
-    setDuration(newDuration * 60);
-    setTimeLeft(newDuration * 60);
+    const newDurationInSeconds = newDuration * 60;
+    setDuration(newDurationInSeconds);
+    setInitialDuration(newDurationInSeconds);
+    setTimeLeft(newDurationInSeconds);
     setIsActive(false);
   };
 
@@ -103,7 +168,6 @@ export default function FocusPage() {
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Legend />
                     <Bar dataKey="This Week" fill="var(--color-This Week)" radius={4} />
-                    <Bar dataKey="Last Week" fill="var(--color-Last Week)" radius={4} />
                   </BarChart>
                 </ResponsiveContainer>
               </ChartContainer>
@@ -128,7 +192,7 @@ export default function FocusPage() {
                       </DialogHeader>
                       <form onSubmit={handleCustomDurationSubmit}>
                         <div className="grid gap-4 py-4">
-                            <RadioGroup defaultValue={String(duration / 60)} onValueChange={(val) => handleDurationChange(Number(val))} className="grid grid-cols-3 gap-4">
+                            <RadioGroup defaultValue={String(initialDuration / 60)} onValueChange={(val) => handleDurationChange(Number(val))} className="grid grid-cols-3 gap-4">
                                 <div>
                                     <RadioGroupItem value="25" id="r1" className="peer sr-only" />
                                     <Label htmlFor="r1" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">25 min</Label>
@@ -191,9 +255,15 @@ export default function FocusPage() {
                   <span className="text-sm text-muted-foreground">{isActive ? "Focusing" : "Paused"}</span>
                 </div>
               </div>
+              <Input 
+                value={taskTag}
+                onChange={(e) => setTaskTag(e.target.value)}
+                placeholder="What are you working on?"
+                className="max-w-xs text-center"
+              />
               <div className="flex gap-2">
                 <Button onClick={toggleTimer} className="w-24">
-                  {isActive ? "Pause" : "Start Focus"}
+                  {isActive ? "Pause" : "Start"}
                 </Button>
                 <Button variant="ghost" onClick={resetTimer}>Reset</Button>
               </div>
