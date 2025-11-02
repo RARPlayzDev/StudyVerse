@@ -1,82 +1,128 @@
 'use client';
 import { useState } from 'react';
 import PageTitle from "@/components/common/page-title";
-import ChatInterface from "@/components/common/chat-interface";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { placeholderRooms } from "@/lib/placeholder-data";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Hash, PlusCircle, Users } from "lucide-react";
-import { CollabRoom, Message } from "@/lib/types";
-import { cn } from '@/lib/utils';
+import { Hash, PlusCircle, Users, Video } from "lucide-react";
+import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 
 export default function CollabPage() {
-    const [selectedRoom, setSelectedRoom] = useState<CollabRoom>(placeholderRooms[0]);
-    const [messages, setMessages] = useState<Message[]>(selectedRoom.messages);
-
-    const handleSendMessage = (text: string) => {
-        const newMessage: Message = {
-            id: `m${messages.length + 1}`,
-            sender: "Alex Johnson", // This would come from auth user
-            senderAvatar: "https://picsum.photos/seed/user1/100/100",
-            text,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-        setMessages([...messages, newMessage]);
-    };
+    // For demonstration, we'll split the placeholder rooms.
+    const publicRooms = placeholderRooms.slice(0, 2);
+    const yourRooms = [placeholderRooms[2]];
 
     return (
-        <div className="h-[calc(100vh-8rem)]">
-            <PageTitle title="Collaboration Space" subtitle="Join study rooms and learn together." />
-            
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-full">
-                <Card className="lg:col-span-1 bg-card/50 backdrop-blur-sm border-border/50 h-full flex flex-col">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle className="text-lg">Study Rooms</CardTitle>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <PlusCircle className="h-4 w-4" />
-                        </Button>
-                    </CardHeader>
-                    <CardContent className="p-2 flex-1 overflow-y-auto">
-                        <div className="space-y-1">
-                            {placeholderRooms.map(room => (
-                                <button
-                                    key={room.id}
-                                    onClick={() => {
-                                        setSelectedRoom(room);
-                                        setMessages(room.messages);
-                                    }}
-                                    className={cn(
-                                        "w-full text-left flex items-center gap-3 p-2 rounded-md transition-colors",
-                                        selectedRoom.id === room.id ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
-                                    )}
-                                >
-                                    <Hash className="h-5 w-5 text-muted-foreground" />
-                                    <div className="flex-1 truncate">
-                                        <p className="font-medium text-sm">{room.topic}</p>
-                                        <p className="text-xs text-muted-foreground">{room.memberCount} members</p>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
+        <div>
+            <div className="flex justify-between items-center mb-6">
+                <PageTitle title="Collaboration Space" subtitle="Join study rooms and learn together." className="mb-0" />
+                <Button>
+                    <PlusCircle className="w-4 h-4 mr-2" />
+                    Create New Room
+                </Button>
+            </div>
 
-                <Card className="lg:col-span-3 bg-card/50 backdrop-blur-sm border-border/50 h-full flex flex-col">
-                    <CardHeader className="border-b border-border/50">
-                        <div className="flex items-center gap-2">
-                             <Hash className="h-5 w-5" />
-                             <h2 className="font-semibold text-lg">{selectedRoom.topic}</h2>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Users className="h-4 w-4" />
-                            <span>{selectedRoom.memberCount} Members</span>
-                        </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 space-y-8">
+                    <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                        <CardHeader>
+                            <CardTitle>Public Study Rooms</CardTitle>
+                            <CardDescription>Discover and join rooms created by other students.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {publicRooms.map(room => (
+                                <Card key={room.id} className="bg-background/50 hover:bg-muted/50 transition-colors">
+                                    <CardHeader>
+                                        <CardTitle className="text-base flex items-center gap-2">
+                                            <Hash className="w-4 h-4" />
+                                            {room.topic}
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="flex justify-between items-center">
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <Users className="w-4 h-4" />
+                                            <span>{room.memberCount} Members</span>
+                                        </div>
+                                        <Button variant="outline" size="sm" asChild>
+                                            <Link href="#">Join Room</Link>
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </CardContent>
+                    </Card>
+
+                    <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                        <CardHeader>
+                            <CardTitle>Your Study Rooms</CardTitle>
+                            <CardDescription>Rooms you have created or joined.</CardDescription>
+                        </CardHeader>
+                         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {yourRooms.map(room => (
+                                <Card key={room.id} className="bg-background/50 hover:bg-muted/50 transition-colors">
+                                    <CardHeader>
+                                        <CardTitle className="text-base flex items-center gap-2">
+                                            <Hash className="w-4 h-4" />
+                                            {room.topic}
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="flex justify-between items-center">
+                                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <Users className="w-4 h-4" />
+                                            <span>{room.memberCount} Members</span>
+                                        </div>
+                                        <Button size="sm" asChild>
+                                            <Link href="#">Enter Room</Link>
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </CardContent>
+                    </Card>
+                </div>
+                <div className="space-y-8">
+                   <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                        <CardHeader>
+                            <CardTitle>Focus Music</CardTitle>
+                            <CardDescription>Lofi beats to study to.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="aspect-video">
+                            <iframe 
+                            className="w-full h-full rounded-md"
+                            src="https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&mute=1&loop=1" 
+                            title="YouTube video player" 
+                            frameBorder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowFullScreen>
+                            </iframe>
+                        </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-card/50 backdrop-blur-sm border-border/50 flex flex-col items-center justify-center text-center">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-green-500"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                            Spotify Integration
+                        </CardTitle>
                     </CardHeader>
-                    <div className="flex-1 overflow-y-hidden">
-                       <ChatInterface messages={messages} onSendMessage={handleSendMessage} chatType="collab" />
-                    </div>
-                </Card>
+                    <CardContent>
+                        <p className="text-muted-foreground">Coming soon!</p>
+                    </CardContent>
+                    </Card>
+
+                    <Card className="bg-card/50 backdrop-blur-sm border-border/50 flex flex-col items-center justify-center text-center">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 justify-center">
+                               <Video className="h-6 w-6 text-primary" />
+                                Video Chat Rooms
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-muted-foreground">Coming soon!</p>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
         </div>
     );
