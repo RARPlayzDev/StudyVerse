@@ -19,7 +19,7 @@ export type Task = {
   startDate: string; // Storing as ISO string e.g. .toISOString()
   dueDate: string; // Storing as ISO string e.g. .toISOString()
   priority: 'low' | 'medium' | 'high';
-  status: 'todo' | 'inprogress' | 'done';
+  status: 'todo' | 'inprogress' | 'done' | 'overdue';
 };
 
 export type Note = {
@@ -57,3 +57,5 @@ export type Message = {
   text: string;
   timestamp: string;
 };
+
+    

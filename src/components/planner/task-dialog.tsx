@@ -22,7 +22,7 @@ const taskFormSchema = z.object({
   dueDate: z.date({ required_error: 'Due date is required.' }),
   priority: z.enum(['low', 'medium', 'high']),
 }).refine(data => data.dueDate >= data.startDate, {
-  message: "End date cannot be earlier than start date.",
+  message: "Due date cannot be earlier than start date.",
   path: ["dueDate"],
 });
 
@@ -220,3 +220,5 @@ export function TaskDialog({ isOpen, setIsOpen, task, onSave }: TaskDialogProps)
     </Dialog>
   );
 }
+
+    

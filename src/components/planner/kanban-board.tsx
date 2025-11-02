@@ -1,5 +1,5 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { collection, doc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import type { Task } from "@/lib/types";
@@ -7,11 +7,12 @@ import { Card, CardContent } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '../ui/dropdown-menu';
-import { Edit, MoreVertical, PlusCircle, Trash, CheckCircle, Circle, Loader } from "lucide-react";
+import { Edit, MoreVertical, PlusCircle, Trash, CheckCircle, Circle, Loader, AlertTriangle } from "lucide-react";
 import { TaskDialog } from './task-dialog';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { cn } from '@/lib/utils';
+import { isPast, startOfDay } from 'date-fns';
 
 type Column = {
     title: string;
@@ -21,19 +22,20 @@ type Column = {
 const columns: Column[] = [
     { title: "To Do", status: "todo" },
     { title: "In Progress", status: "inprogress" },
+    { title: "Overdue", status: "overdue"},
     { title: "Done", status: "done" },
 ];
 
 function TaskCard({ task, onEdit, onStatusChange, onDelete }: { task: Task; onEdit: () => void; onStatusChange: (status: Task['status']) => void; onDelete: (event: React.MouseEvent) => void; }) {
-    const isTodo = task.status === 'todo';
+    const isClickable = task.status === 'todo' || task.status === 'inprogress';
     
     return (
         <Card 
             className={cn(
                 "mb-4 bg-background/50 transition-colors",
-                isTodo ? "hover:bg-background/80 cursor-pointer" : "hover:bg-background/70"
+                isClickable ? "hover:bg-background/80 cursor-pointer" : "hover:bg-background/70"
             )}
-            onClick={isTodo ? onEdit : undefined}
+            onClick={isClickable ? onEdit : undefined}
         >
             <CardContent className="p-4">
                 <div className="flex justify-between items-start">
@@ -87,11 +89,23 @@ export default function KanbanBoard() {
 
     const { data: tasks, isLoading } = useCollection<Task>(tasksQuery);
     
+    useEffect(() => {
+        if (tasks && user) {
+            const today = startOfDay(new Date());
+            tasks.forEach(task => {
+                if (task.status === 'inprogress' && isPast(new Date(task.dueDate)) && !isSameDay(new Date(task.dueDate), today)) {
+                    handleStatusChange(task.id, 'overdue');
+                }
+            });
+        }
+    }, [tasks, user]);
+
     const tasksByStatus = useMemo(() => {
         const groupedTasks: { [key in Task['status']]: Task[] } = {
             todo: [],
             inprogress: [],
             done: [],
+            overdue: []
         };
         tasks?.forEach(task => {
             if (groupedTasks[task.status]) {
@@ -175,13 +189,14 @@ export default function KanbanBoard() {
         switch (status) {
             case 'todo': return <Circle className="h-4 w-4 text-muted-foreground" />;
             case 'inprogress': return <Loader className="h-4 w-4 text-blue-500 animate-spin" />;
+            case 'overdue': return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
             case 'done': return <CheckCircle className="h-4 w-4 text-green-500" />;
         }
     }
 
     return (
         <>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
                 {columns.map(column => {
                     const columnTasks = tasksByStatus[column.status];
                     return (
@@ -213,7 +228,7 @@ export default function KanbanBoard() {
                                     )}
                                      {!isLoading && columnTasks.length === 0 && (
                                         <div className="flex items-center justify-center h-full text-center text-muted-foreground p-4 text-sm">
-                                            {column.status === 'done' ? "Let's get some work done!" : `No tasks in ${column.title.toLowerCase()}.`}
+                                            {column.status === 'done' ? "Let's get some work done!" : column.status === 'overdue' ? 'No overdue tasks. Keep it up!' : `No tasks in ${column.title.toLowerCase()}.`}
                                         </div>
                                     )}
                                 </CardContent>
@@ -231,3 +246,5 @@ export default function KanbanBoard() {
         </>
     );
 }
+
+    
