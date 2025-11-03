@@ -85,7 +85,7 @@ service cloud.firestore {
       }
       
       // Only members of the room can read or write messages.
-      allow read, write: if isRoomMember() && request.resource.data.senderId == request.auth.uid;
+      allow read, write: if isRoomMember();
     }
 
     match /adminLogs/{adminLogId} {

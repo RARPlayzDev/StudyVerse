@@ -1,9 +1,9 @@
 'use client';
 import { notFound, useParams } from 'next/navigation';
 import { useDoc, useFirestore, useUser, useMemoFirebase, useCollection } from '@/firebase';
-import { doc, collection, addDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { doc, collection, addDoc, serverTimestamp, query, orderBy, Timestamp } from 'firebase/firestore';
 import type { CollabRoom, Message } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import ChatInterface from '@/components/collab/chat-interface';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -52,15 +52,16 @@ export default function CollabRoomPage() {
     if (!user || !roomId) return;
     
     const messagesColRef = collection(firestore, `collabRooms/${roomId}/messages`);
-    const newMessage: Omit<Message, 'id' | 'timestamp'> = {
+    const newMessage = {
         roomId: roomId as string,
         senderId: user.uid,
         senderName: user.displayName || user.email || 'Anonymous',
         senderAvatar: user.photoURL || `https://picsum.photos/seed/${user.uid}/100/100`,
         text: text,
+        timestamp: serverTimestamp(),
     };
 
-    addDoc(messagesColRef, { ...newMessage, timestamp: serverTimestamp() }).catch((err) => {
+    addDoc(messagesColRef, newMessage).catch((err) => {
       const permissionError = new FirestorePermissionError({
         path: messagesColRef.path,
         operation: 'create',
@@ -106,7 +107,7 @@ export default function CollabRoomPage() {
             <Card className="flex-1 bg-card/50 backdrop-blur-sm border-border/50 h-full flex flex-col overflow-hidden">
                 <CardHeader className="py-3 px-4 border-b border-border/50">
                     <CardTitle className="text-lg">{room.topic}</CardTitle>
-                    <CardContent className="text-xs p-0 text-muted-foreground">{room.description}</CardContent>
+                    <CardDescription>{room.description}</CardDescription>
                 </CardHeader>
                 <ChatInterface 
                     messages={messages || []}

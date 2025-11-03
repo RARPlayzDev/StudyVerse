@@ -60,5 +60,5 @@ export type Message = {
   senderName: string;
   senderAvatar?: string;
   text: string;
-  timestamp: Date | Timestamp;
+  timestamp: Timestamp;
 };
