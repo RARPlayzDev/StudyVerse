@@ -28,11 +28,11 @@ import { doc, updateDoc } from 'firebase/firestore';
 import type { User as UserType } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Moon, Sun } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { updateProfile } from 'firebase/auth';
+import { updateProfile, updatePassword, deleteUser } from 'firebase/auth';
 import { useTheme } from 'next-themes';
 import { Badge } from '@/components/ui/badge';
+import DeleteAccountDialog from '@/components/settings/delete-account-dialog';
 
 const profileFormSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters.'),
@@ -58,6 +58,7 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const [isProfileSaving, setProfileSaving] = useState(false);
   const [isPasswordSaving, setPasswordSaving] = useState(false);
+  const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const { setTheme } = useTheme();
 
   const userDocRef = useMemoFirebase(() => {
@@ -100,15 +101,39 @@ export default function SettingsPage() {
     }
   };
 
-  const handlePasswordChange = (values: PasswordFormValues) => {
-    // Firebase function for password change to be implemented
-    console.log(values);
-    toast({ title: 'Password change not implemented yet.' });
+  const handlePasswordChange = async (values: PasswordFormValues) => {
+    if (!auth.currentUser) {
+        toast({ title: 'Not authenticated', variant: 'destructive'});
+        return;
+    }
+    setPasswordSaving(true);
+    try {
+        await updatePassword(auth.currentUser, values.newPassword);
+        toast({ title: 'Password Updated', description: 'Your password has been changed successfully.' });
+        passwordForm.reset();
+    } catch (error: any) {
+        console.error(error);
+        toast({ title: 'Error updating password', description: 'Please log out and log in again before changing your password.', variant: 'destructive' });
+    } finally {
+        setPasswordSaving(false);
+    }
   }
 
-  const handleAccountDelete = () => {
-    // Firebase function for account deletion to be implemented
-    toast({ title: 'Account deletion not implemented yet.' });
+  const handleAccountDelete = async () => {
+    if (!auth.currentUser) {
+        toast({ title: 'Not authenticated', variant: 'destructive'});
+        return;
+    }
+    try {
+        await deleteUser(auth.currentUser);
+        toast({ title: 'Account Deleted', description: 'Your account has been permanently deleted.' });
+        // The user will be signed out and redirected by the auth state listener.
+    } catch (error: any) {
+        console.error(error);
+        toast({ title: 'Error deleting account', description: 'Please log out and log in again before deleting your account.', variant: 'destructive' });
+    } finally {
+        setDeleteDialogOpen(false);
+    }
   }
 
   return (
@@ -130,7 +155,6 @@ export default function SettingsPage() {
                     <AvatarFallback className="text-3xl">{userData?.name?.charAt(0) || user?.email?.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="space-y-2">
-                     <p className="text-sm text-muted-foreground">Avatar customization is coming soon.</p>
                      <h3 className="text-2xl font-semibold">{userData?.name || user?.displayName}</h3>
                      <p className="text-muted-foreground">{user?.email}</p>
                      {userData?.role && <Badge variant="secondary" className="capitalize">{userData.role}</Badge>}
@@ -233,12 +257,17 @@ export default function SettingsPage() {
             <div>
                 <h3 className="text-md font-semibold text-destructive">Delete Account</h3>
                 <p className="text-sm text-muted-foreground mt-1 mb-4">Permanently delete your account and all associated data. This action is irreversible.</p>
-                <Button variant="destructive" onClick={handleAccountDelete}>Delete My Account</Button>
+                <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}>Delete My Account</Button>
             </div>
-
           </CardContent>
         </Card>
       </div>
+
+       <DeleteAccountDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleAccountDelete}
+      />
     </div>
   );
 }
