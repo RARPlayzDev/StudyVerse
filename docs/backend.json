@@ -221,13 +221,6 @@
           "type": "string",
           "description": "Reference to User. (Relationship: User 1:N CollabRoom). The user ID of the room creator."
         },
-        "members": {
-          "type": "array",
-          "description": "References to Users. (Relationship: User N:N CollabRoom). An array of user IDs of the room members.",
-          "items": {
-            "type": "string"
-          }
-        },
         "inviteCode": {
             "type": "string",
             "description": "A unique, short code for inviting users to a private room."
@@ -238,9 +231,26 @@
         "topic",
         "description",
         "type",
-        "createdBy",
-        "members"
+        "createdBy"
       ]
+    },
+    "CollabRoomMember": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "CollabRoomMember",
+      "type": "object",
+      "description": "Represents a member in a collaboration room. The document ID is the user's UID.",
+      "properties": {
+        "joinedAt": {
+          "type": "string",
+          "description": "The timestamp when the user joined the room.",
+          "format": "date-time"
+        },
+        "userId": {
+            "type": "string",
+            "description": "The UID of the user who is the member."
+        }
+      },
+      "required": ["joinedAt", "userId"]
     },
     "ChatMessage": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -449,6 +459,26 @@
         }
       },
       {
+        "path": "/collabRooms/{roomId}/members/{userId}",
+        "definition": {
+          "entityName": "CollabRoomMember",
+          "schema": {
+            "$ref": "#/backend/entities/CollabRoomMember"
+          },
+          "description": "Subcollection to store members of a room. The document ID is the user's UID, allowing for easy security rule checks.",
+          "params": [
+            {
+              "name": "roomId",
+              "description": "The unique identifier for the collaboration room."
+            },
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user who is a member."
+            }
+          ]
+        }
+      },
+      {
         "path": "/collabRooms/{roomId}/messages/{messageId}",
         "definition": {
           "entityName": "ChatMessage",
@@ -524,3 +554,5 @@
     "reasoning": "The Firestore data structure is designed to ensure authorization independence, clarity, and scalability, aligning with the core principles outlined. It leverages path-based ownership for private user data and membership maps for collaborative data. Authorization independence is achieved through denormalization. Specifically, the `members` array from the `CollabRoom` is duplicated in the `ChatMessage` documents to eliminate the need for `get()` calls in security rules, allowing messages to be created atomically. Segregation is used to ensure that all documents in a collection share the same security posture, which simplifies security rules. The structure efficiently supports required QAPs by using path-based ownership for user-specific data like `FocusSession`, `Task`, `Note`, and dedicated collections with membership maps for collaborative resources like `CollabRoom` and its `ChatMessage`. Global roles are managed using the presence of documents in dedicated collections (e.g., `roles_admin/{uid}`). This entire structure minimizes complexity and enhances debuggability."
   }
 }
+
+    

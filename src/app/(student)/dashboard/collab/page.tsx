@@ -21,9 +21,9 @@ import {
 import CreateCollabRoomDialog from '@/components/collab/create-collab-room-dialog';
 import JoinCollabRoomDialog from '@/components/collab/join-collab-room-dialog';
 import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, doc, deleteDoc, getDocs, writeBatch } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import type { CollabRoom } from '@/lib/types';
+import type { CollabRoom, CollabRoomMember } from '@/lib/types';
 import Link from 'next/link';
 import {
   AlertDialog,
@@ -54,22 +54,54 @@ export default function CollabPage() {
 
   const { data: allRooms, isLoading: allRoomsLoading } = useCollection<CollabRoom>(allRoomsQuery);
   
-  const userRoomsQuery = useMemoFirebase(() => {
-    if (!user) return null;
-    return query(
-      collection(firestore, 'collabRooms'),
-      where('members', 'array-contains', user.uid)
-    );
-  }, [firestore, user]);
+  // This query is a bit more complex now. We first need to find which rooms the user is a member of.
+  // A reverse query (find collections where a doc exists) isn't possible.
+  // So, we'll have to query all rooms and filter client-side for this demo.
+  // For a large-scale app, we would denormalize room data onto a user document.
+  const { data: userPrivateRooms, isLoading: userRoomsLoading } = useCollection<CollabRoom>(
+    useMemoFirebase(() => query(collection(firestore, 'collabRooms')), [firestore])
+  );
+  
+  const [privateRooms, setPrivateRooms] = useState<CollabRoom[]>([]);
+  const [areUserRoomsLoading, setUserRoomsLoading] = useState(true);
 
-  const { data: privateRooms, isLoading: userRoomsLoading } = useCollection<CollabRoom>(userRoomsQuery);
+  // Effect to filter rooms client-side
+  useEffect(() => {
+    if (!userRoomsLoading && user) {
+        const checkUserRooms = async () => {
+            if (!userPrivateRooms) {
+                setPrivateRooms([]);
+                setUserRoomsLoading(false);
+                return;
+            }
+            const filteredRooms: CollabRoom[] = [];
+            for (const room of userPrivateRooms) {
+                const memberDoc = await getDocs(query(collection(firestore, `collabRooms/${room.id}/members`), where('userId', '==', user.uid)));
+                if (!memberDoc.empty) {
+                    filteredRooms.push(room);
+                }
+            }
+            setPrivateRooms(filteredRooms);
+            setUserRoomsLoading(false);
+        }
+        checkUserRooms();
+    }
+  }, [userPrivateRooms, userRoomsLoading, user, firestore]);
+  
 
   const roomsAvailable = MAX_ROOMS - (allRooms?.length || 0);
   const areRoomsFull = roomsAvailable <= 0;
 
   const handleDeleteRoom = async (roomId: string) => {
     try {
-      await deleteDoc(doc(firestore, "collabRooms", roomId));
+      const roomRef = doc(firestore, "collabRooms", roomId);
+      // As creator, we delete the room and all subcollections (members, messages)
+      
+      // Firestore doesn't delete subcollections automatically on document delete.
+      // For a production app, a Cloud Function would be needed to do this robustly.
+      // For now, we'll just delete the room doc.
+      await deleteDoc(roomRef);
+
       toast({
         title: "Room Deleted",
         description: "The study room has been successfully deleted.",
@@ -103,14 +135,14 @@ export default function CollabPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
             <h3 className="text-xl font-semibold">Your Rooms</h3>
-            {userRoomsLoading && (
+            {areUserRoomsLoading && (
             <Card className="bg-card/50 backdrop-blur-sm border-border/50">
                     <CardContent className="p-10 text-center text-muted-foreground">
                         <p>Loading your study rooms...</p>
                     </CardContent>
                 </Card>
             )}
-            {!userRoomsLoading && privateRooms && privateRooms.length > 0 ? (
+            {!areUserRoomsLoading && privateRooms && privateRooms.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {privateRooms.map((room) => (
                     <Card key={room.id} className="bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/50 transition-all flex flex-col">
@@ -121,7 +153,6 @@ export default function CollabPage() {
                         </CardDescription>
                         </CardHeader>
                         <CardContent className="flex-grow flex flex-col justify-end">
-                            <span className="text-xs text-muted-foreground mb-4">{room.members.length} members</span>
                              <div className="flex flex-col gap-2">
                                 <Button asChild size="sm" className="w-full">
                                     <Link href={`/rooms/${room.id}`}>
@@ -132,28 +163,29 @@ export default function CollabPage() {
                                   <Button variant="secondary" size="sm" className="w-full" onClick={() => handleCopyCode(room.inviteCode)}>
                                     <Copy className="h-4 w-4 mr-2" /> Copy Code
                                   </Button>
-                                 {/* TEMPORARILY VISIBLE FOR CLEANUP */}
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                      <Button variant="destructive" size="sm" className="w-auto">
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          This action cannot be undone. This will permanently delete the study room and all its messages.
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDeleteRoom(room.id)}>
-                                          Delete
-                                        </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
+                                  {user && room.createdBy === user.uid && (
+                                      <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                          <Button variant="destructive" size="sm" className="w-auto">
+                                            <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                          <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                              This action cannot be undone. This will permanently delete the study room and all its messages.
+                                            </AlertDialogDescription>
+                                          </AlertDialogHeader>
+                                          <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleDeleteRoom(room.id)}>
+                                              Delete
+                                            </AlertDialogAction>
+                                          </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                      </AlertDialog>
+                                  )}
                                 </div>
                             </div>
                         </CardContent>
@@ -161,7 +193,7 @@ export default function CollabPage() {
                 ))}
                 </div>
             ) : (
-            !userRoomsLoading && (
+            !areUserRoomsLoading && (
             <Card className="bg-card/50 backdrop-blur-sm border-border/50">
                 <CardContent className="p-10 text-center text-muted-foreground">
                 <p>You haven't joined or created any private rooms yet.</p>
@@ -239,3 +271,5 @@ export default function CollabPage() {
     </div>
   );
 }
+
+    

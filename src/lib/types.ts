@@ -4,7 +4,7 @@ export type User = {
   id: string;
   name: string;
   email: string;
-  avatarUrl: string;
+  avatarUrl?: string;
   role: 'student' | 'admin';
   joinDate: string;
   lastActive: string;
@@ -15,7 +15,7 @@ export type Task = {
   id: string;
   userId: string;
   title: string;
-  subject: string;
+  subject:string;
   startDate: string; // Storing as ISO string e.g. .toISOString()
   dueDate: string; // Storing as ISO string e.g. .toISOString()
   priority: 'low' | 'medium' | 'high';
@@ -49,9 +49,15 @@ export type CollabRoom = {
   description: string;
   type: 'public' | 'private';
   createdBy: string;
-  members: string[]; // array of user UIDs
+  // members array is removed
   inviteCode?: string;
 };
+
+export type CollabRoomMember = {
+    id: string; // This will be the user's UID
+    userId: string;
+    joinedAt: Timestamp;
+}
 
 export type Message = {
   id: string;
@@ -62,3 +68,5 @@ export type Message = {
   text: string;
   timestamp: Timestamp;
 };
+
+    

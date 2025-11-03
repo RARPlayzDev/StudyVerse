@@ -19,7 +19,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useUser, useFirestore } from '@/firebase';
 import {
@@ -27,9 +26,10 @@ import {
   query,
   where,
   getDocs,
-  updateDoc,
-  arrayUnion,
   doc,
+  setDoc,
+  serverTimestamp,
+  getDoc,
 } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
@@ -105,9 +105,14 @@ export default function JoinCollabRoomDialog({
       
       const roomDoc = querySnapshot.docs[0];
       const roomData = roomDoc.data() as CollabRoom;
-      const roomRef = doc(firestore, 'collabRooms', roomDoc.id);
+      const roomId = roomDoc.id;
+      
+      // Path to the members subcollection document
+      const memberRef = doc(firestore, 'collabRooms', roomId, 'members', user.uid);
 
-      if (roomData.members.includes(user.uid)) {
+      // Check if user is already a member
+      const memberDoc = await getDoc(memberRef);
+      if (memberDoc.exists()) {
         toast({
             title: 'Already a Member',
             description: 'You are already in this study room.',
@@ -118,13 +123,16 @@ export default function JoinCollabRoomDialog({
         return;
       }
 
-      await updateDoc(roomRef, {
-        members: arrayUnion(user.uid),
-      }).catch((err) => {
+      // Add user to the members subcollection by creating a document with their UID
+      const memberData = {
+        userId: user.uid,
+        joinedAt: serverTimestamp(),
+      }
+      await setDoc(memberRef, memberData).catch((err) => {
         const permissionError = new FirestorePermissionError({
-          path: roomRef.path,
-          operation: 'update',
-          requestResourceData: { members: `+ ${user.uid}` },
+          path: memberRef.path,
+          operation: 'create',
+          requestResourceData: memberData,
         });
         errorEmitter.emit('permission-error', permissionError);
         throw err;
@@ -209,3 +217,5 @@ export default function JoinCollabRoomDialog({
     </Dialog>
   );
 }
+
+    

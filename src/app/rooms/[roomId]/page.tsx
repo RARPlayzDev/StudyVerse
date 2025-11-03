@@ -2,8 +2,8 @@
 'use client';
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { useDoc, useFirestore, useUser, useMemoFirebase, useCollection } from '@/firebase';
-import { doc, collection, addDoc, serverTimestamp, query, orderBy, Timestamp, updateDoc, arrayRemove, deleteDoc, where } from 'firebase/firestore';
-import type { CollabRoom, Message, User as UserType } from '@/lib/types';
+import { doc, collection, addDoc, serverTimestamp, query, orderBy, Timestamp, deleteDoc, where } from 'firebase/firestore';
+import type { CollabRoom, Message, User as UserType, CollabRoomMember } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import ChatInterface from '@/components/collab/chat-interface';
@@ -15,25 +15,36 @@ import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 
-function MemberList({ memberIds }: { memberIds: string[] }) {
+function MemberList({ roomId }: { roomId: string }) {
     const firestore = useFirestore();
 
+    // Query the members subcollection
+    const membersQuery = useMemoFirebase(() => {
+        return query(collection(firestore, `collabRooms/${roomId}/members`));
+    }, [firestore, roomId]);
+
+    const { data: members, isLoading: areMembersLoading } = useCollection<CollabRoomMember>(membersQuery);
+
+    // Fetch user profiles for the members
+    const memberIds = useMemo(() => members?.map(m => m.userId) || [], [members]);
+
     const usersQuery = useMemoFirebase(() => {
-        if (!memberIds || memberIds.length === 0) return null;
-        // Firestore 'in' queries are limited to 10 items. For a larger app, this would need pagination.
+        if (memberIds.length === 0) return null;
         return query(collection(firestore, 'users'), where('id', 'in', memberIds.slice(0, 10)));
     }, [firestore, memberIds]);
 
-    const { data: members, isLoading } = useCollection<UserType>(usersQuery);
+    const { data: memberProfiles, isLoading: areProfilesLoading } = useCollection<UserType>(usersQuery);
+
+    const isLoading = areMembersLoading || areProfilesLoading;
 
     return (
         <Card className="bg-card/50 backdrop-blur-sm border-border/50 flex-1 flex flex-col">
             <CardHeader>
-                <CardTitle className="flex items-center gap-2"><UserIcon className="h-5 w-5" /> Members ({memberIds.length})</CardTitle>
+                <CardTitle className="flex items-center gap-2"><UserIcon className="h-5 w-5" /> Members ({members?.length || 0})</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 overflow-y-auto flex-1 p-6">
-                {isLoading && Array.from({ length: memberIds.length }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
-                {!isLoading && members?.map(member => (
+                {isLoading && Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+                {!isLoading && memberProfiles?.map(member => (
                     <div key={member.id} className="flex items-center gap-3">
                         <Avatar className="h-8 w-8 relative">
                             <AvatarImage src={member.avatarUrl} data-ai-hint="person portrait" />
@@ -48,12 +59,14 @@ function MemberList({ memberIds }: { memberIds: string[] }) {
     );
 }
 
+
 export default function CollabRoomPage() {
   const { roomId } = useParams();
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
+  const [isMember, setIsMember] = useState<boolean | null>(null);
 
   const roomRef = useMemoFirebase(() => {
     if (!roomId) return null;
@@ -61,6 +74,18 @@ export default function CollabRoomPage() {
   }, [firestore, roomId]);
 
   const { data: room, isLoading: isRoomLoading } = useDoc<CollabRoom>(roomRef);
+  
+  // Check for membership
+  useEffect(() => {
+    if (user && roomId) {
+        const memberRef = doc(firestore, `collabRooms/${roomId}/members/${user.uid}`);
+        const unsub = onSnapshot(doc, (doc) => {
+            setIsMember(doc.exists());
+        });
+        return () => unsub();
+    }
+  }, [user, roomId, firestore]);
+
 
   const messagesQuery = useMemoFirebase(() => {
     if (!roomId) return null;
@@ -70,17 +95,15 @@ export default function CollabRoomPage() {
   const { data: messages, isLoading: areMessagesLoading } = useCollection<Message>(messagesQuery);
   
   useEffect(() => {
-    // Only perform redirects after all data has loaded
-    if (!isRoomLoading && !isUserLoading) {
+    const isAuthCheckComplete = !isRoomLoading && !isUserLoading && isMember !== null;
+    
+    if (isAuthCheckComplete) {
       if (!room) {
-        // If room doesn't exist after loading, it's a true 404
         return notFound();
       }
       if (!user) {
-        // If user isn't logged in, send to login
         router.push('/login');
-      } else if (!room.members.includes(user.uid)) {
-        // If user is not a member, send to collab dashboard
+      } else if (!isMember) {
         toast({
           title: "Access Denied",
           description: "You are not a member of this room.",
@@ -89,7 +112,7 @@ export default function CollabRoomPage() {
         router.push('/dashboard/collab');
       }
     }
-  }, [room, user, isRoomLoading, isUserLoading, router, toast]);
+  }, [room, user, isRoomLoading, isUserLoading, isMember, router, toast]);
 
   const handleSendMessage = (text: string) => {
     if (!user || !roomId) return;
@@ -123,10 +146,9 @@ export default function CollabRoomPage() {
       toast({ title: 'Room Deleted', description: 'As the creator, you have deleted the room.' });
       router.push('/dashboard/collab');
     } else {
-      // Member leaves the room
-      await updateDoc(roomRef, {
-          members: arrayRemove(user.uid)
-      });
+      // Member leaves the room by deleting their document in the members subcollection
+      const memberRef = doc(firestore, `collabRooms/${room.id}/members/${user.uid}`);
+      await deleteDoc(memberRef);
       toast({ title: 'You Left the Room' });
       router.push('/dashboard/collab');
     }
@@ -141,11 +163,9 @@ export default function CollabRoomPage() {
     });
   };
   
-  const isLoading = isUserLoading || isRoomLoading;
+  const isLoading = isUserLoading || isRoomLoading || isMember === null;
 
-  // Final check to ensure we only render if everything is loaded and valid
-  if (isLoading || !room || !user || !room.members.includes(user.uid)) {
-    // This will show the loading screen while the useEffect hook handles the redirect.
+  if (isLoading || !room || !user || !isMember) {
     return (
         <div className="flex min-h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-gray-950 via-slate-900 to-purple-950">
             <p className="text-white">Loading Room...</p>
@@ -157,12 +177,10 @@ export default function CollabRoomPage() {
     <div className="min-h-screen w-full flex flex-col p-4 sm:p-6 bg-gradient-to-br from-gray-950 via-slate-900 to-purple-950">
         <main className="flex-1 grid grid-cols-1 lg:grid-cols-[320px_1fr_320px] gap-6">
             
-            {/* Left Sidebar */}
-            <div className="flex flex-col gap-6 h-full">
-                <MemberList memberIds={room.members} />
+            <div className="lg:flex flex-col gap-6 h-full">
+                <MemberList roomId={roomId as string} />
             </div>
 
-            {/* Main Chat Panel */}
             <Card className="flex-1 bg-card/50 backdrop-blur-sm border-border/50 h-full flex flex-col overflow-hidden">
                 <CardHeader className="py-3 px-4 border-b border-border/50 flex-row items-center justify-between">
                     <div>
@@ -187,7 +205,6 @@ export default function CollabRoomPage() {
                 />
             </Card>
 
-            {/* Right Sidebar */}
             <div className="flex flex-col gap-6 h-full">
                 <Card className="bg-card/50 backdrop-blur-sm border-border/50">
                     <CardHeader>
@@ -210,3 +227,4 @@ export default function CollabRoomPage() {
   );
 }
 
+    

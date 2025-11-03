@@ -23,7 +23,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useUser, useFirestore } from '@/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, setDoc, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -87,24 +87,33 @@ export default function CreateCollabRoomDialog({
 
     try {
       const roomsCollection = collection(firestore, 'collabRooms');
-      const newRoom = {
+      const newRoomData = {
         ...values,
         type: 'private' as const,
         createdBy: user.uid,
-        members: [user.uid],
         inviteCode: newInviteCode,
         createdAt: serverTimestamp(),
       };
 
-      const docRef = await addDoc(roomsCollection, newRoom).catch((err) => {
+      // 1. Create the room document
+      const roomDocRef = await addDoc(roomsCollection, newRoomData).catch((err) => {
         const permissionError = new FirestorePermissionError({
           path: roomsCollection.path,
           operation: 'create',
-          requestResourceData: newRoom,
+          requestResourceData: newRoomData,
         });
         errorEmitter.emit('permission-error', permissionError);
         throw err;
       });
+      
+      // 2. Add creator to the members subcollection
+      const memberRef = doc(firestore, 'collabRooms', roomDocRef.id, 'members', user.uid);
+      const memberData = {
+          userId: user.uid,
+          joinedAt: serverTimestamp(),
+      };
+      await setDoc(memberRef, memberData);
+
 
       toast({
         title: 'Room Created!',
@@ -206,3 +215,5 @@ export default function CreateCollabRoomDialog({
     </>
   );
 }
+
+    
