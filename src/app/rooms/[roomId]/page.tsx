@@ -2,23 +2,57 @@
 'use client';
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { useDoc, useFirestore, useUser, useMemoFirebase, useCollection } from '@/firebase';
-import { doc, collection, addDoc, serverTimestamp, query, orderBy, Timestamp, updateDoc, arrayRemove } from 'firebase/firestore';
-import type { CollabRoom, Message } from '@/lib/types';
+import { doc, collection, addDoc, serverTimestamp, query, orderBy, Timestamp, updateDoc, arrayRemove, deleteDoc } from 'firebase/firestore';
+import type { CollabRoom, Message, User as UserType } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import ChatInterface from '@/components/collab/chat-interface';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Button } from '@/components/ui/button';
-import { DoorOpen, Music2, User as UserIcon } from 'lucide-react';
+import { DoorOpen, Music2, User as UserIcon, Copy } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
+
+function MemberList({ memberIds }: { memberIds: string[] }) {
+    const firestore = useFirestore();
+
+    const usersQuery = useMemoFirebase(() => {
+        if (memberIds.length === 0) return null;
+        return query(collection(firestore, 'users'), where('id', 'in', memberIds));
+    }, [firestore, memberIds]);
+
+    const { data: members, isLoading } = useCollection<UserType>(usersQuery);
+
+    return (
+        <Card className="bg-card/50 backdrop-blur-sm border-border/50 flex-1 flex flex-col">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><UserIcon className="h-5 w-5" /> Members ({memberIds.length})</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 overflow-y-auto flex-1 p-6">
+                {isLoading && Array.from({ length: memberIds.length }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+                {!isLoading && members?.map(member => (
+                    <div key={member.id} className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8 relative">
+                            <AvatarImage src={member.avatarUrl} data-ai-hint="person portrait" />
+                            <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                            <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-card" />
+                        </Avatar>
+                        <span>{member.name}</span>
+                    </div>
+                ))}
+            </CardContent>
+        </Card>
+    );
+}
 
 export default function CollabRoomPage() {
   const { roomId } = useParams();
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
+  const { toast } = useToast();
 
   const roomRef = useMemoFirebase(() => {
     if (!roomId) return null;
@@ -35,31 +69,18 @@ export default function CollabRoomPage() {
   const { data: messages, isLoading: areMessagesLoading } = useCollection<Message>(messagesQuery);
   
   useEffect(() => {
-    // This effect handles redirection logic based on auth/data state.
     if (!isRoomLoading && !isUserLoading) {
       if (roomError || !room) {
-        // If there's an error fetching the room or the room doesn't exist, show 404.
         return notFound();
       }
-      if (user && !room.members.includes(user.uid)) {
-        // If the user is logged in but not a member, redirect them.
-        router.push('/dashboard/collab');
-      }
       if (!user) {
-        // If the user is not logged in at all, send them to the main login page.
         router.push('/login');
+      } else if (!room.members.includes(user.uid)) {
+        // This case might happen if user was removed or left, redirect them.
+        router.push('/dashboard/collab');
       }
     }
   }, [room, user, isRoomLoading, isUserLoading, roomError, router]);
-
-
-  if (isUserLoading || isRoomLoading || !room || !user || !room.members.includes(user.uid)) {
-    return (
-        <div className="flex min-h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-gray-950 via-slate-900 to-purple-950">
-            <p className="text-white">Loading Room...</p>
-        </div>
-    )
-  }
 
   const handleSendMessage = (text: string) => {
     if (!user || !roomId) return;
@@ -84,12 +105,42 @@ export default function CollabRoomPage() {
     });
   };
   
-  const handleLeaveRoom = async () => {
-    if (!user || !roomRef) return;
-    await updateDoc(roomRef, {
-        members: arrayRemove(user.uid)
+  const handleLeaveOrDeleteRoom = async () => {
+    if (!user || !roomRef || !room) return;
+    
+    if (user.uid === room.createdBy) {
+      // Creator deletes the room
+      await deleteDoc(roomRef);
+      toast({ title: 'Room Deleted', description: 'As the creator, you have deleted the room.' });
+      router.push('/dashboard/collab');
+    } else {
+      // Member leaves the room
+      await updateDoc(roomRef, {
+          members: arrayRemove(user.uid)
+      });
+      toast({ title: 'You Left the Room' });
+      router.push('/dashboard/collab');
+    }
+  }
+
+  const handleCopyCode = () => {
+    if (!room?.inviteCode) return;
+    navigator.clipboard.writeText(room.inviteCode);
+    toast({
+      title: "Invite Code Copied!",
+      description: "You can now share it with others.",
     });
-    router.push('/dashboard/collab');
+  };
+
+  const isLoading = isUserLoading || isRoomLoading;
+  const canRender = !isLoading && room && user && room.members.includes(user.uid);
+
+  if (isLoading || !canRender) {
+    return (
+        <div className="flex min-h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-gray-950 via-slate-900 to-purple-950">
+            <p className="text-white">Loading Room...</p>
+        </div>
+    )
   }
 
   return (
@@ -98,23 +149,7 @@ export default function CollabRoomPage() {
             
             {/* Left Sidebar */}
             <div className="lg:flex flex-col gap-6 h-full">
-                 <Card className="bg-card/50 backdrop-blur-sm border-border/50 flex-1 flex flex-col">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><UserIcon className="h-5 w-5" /> Members ({room.members.length})</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4 overflow-y-auto flex-1 p-6">
-                       {room.members.map(memberId => (
-                           <div key={memberId} className="flex items-center gap-3">
-                               <Avatar className="h-8 w-8 relative">
-                                   <AvatarImage src={`https://picsum.photos/seed/${memberId}/100/100`} data-ai-hint="person portrait"/>
-                                   <AvatarFallback>{memberId.charAt(0)}</AvatarFallback>
-                                   <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-card" />
-                               </Avatar>
-                               <span>User {memberId.substring(0, 6)}...</span>
-                           </div>
-                       ))}
-                    </CardContent>
-                </Card>
+                <MemberList memberIds={room.members} />
             </div>
 
             {/* Main Chat Panel */}
@@ -124,10 +159,16 @@ export default function CollabRoomPage() {
                         <CardTitle className="text-lg">{room?.topic}</CardTitle>
                         <CardDescription>{room?.description}</CardDescription>
                     </div>
-                     <Button variant="ghost" size="sm" onClick={handleLeaveRoom}>
-                        <DoorOpen className="mr-2 h-4 w-4" />
-                        Leave Room
-                    </Button>
+                     <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={handleCopyCode}>
+                            <Copy className="mr-2 h-4 w-4" />
+                            Copy Invite Code
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={handleLeaveOrDeleteRoom}>
+                            <DoorOpen className="mr-2 h-4 w-4" />
+                            {user.uid === room.createdBy ? 'Delete Room' : 'Leave Room'}
+                        </Button>
+                     </div>
                 </CardHeader>
                 <ChatInterface 
                     messages={messages || []}

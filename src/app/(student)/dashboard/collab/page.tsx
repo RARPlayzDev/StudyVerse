@@ -14,11 +14,13 @@ import {
   LogIn,
   ArrowRight,
   Trash2,
+  Copy,
+  Users,
 } from 'lucide-react';
 import CreateCollabRoomDialog from '@/components/collab/create-collab-room-dialog';
 import JoinCollabRoomDialog from '@/components/collab/join-collab-room-dialog';
 import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, doc, deleteDoc, updateDoc, arrayRemove, getDocs } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import type { CollabRoom } from '@/lib/types';
 import Link from 'next/link';
@@ -34,7 +36,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
+const MAX_ROOMS = 10;
 
 export default function CollabPage() {
   const [isCreateOpen, setCreateOpen] = useState(false);
@@ -43,7 +47,13 @@ export default function CollabPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  const privateRoomsQuery = useMemoFirebase(() => {
+  const allRoomsQuery = useMemoFirebase(() => {
+    return query(collection(firestore, 'collabRooms'));
+  }, [firestore]);
+
+  const { data: allRooms, isLoading: allRoomsLoading } = useCollection<CollabRoom>(allRoomsQuery);
+  
+  const userRoomsQuery = useMemoFirebase(() => {
     if (!user) return null;
     return query(
       collection(firestore, 'collabRooms'),
@@ -51,7 +61,10 @@ export default function CollabPage() {
     );
   }, [firestore, user]);
 
-  const { data: privateRooms, isLoading } = useCollection<CollabRoom>(privateRoomsQuery);
+  const { data: privateRooms, isLoading: userRoomsLoading } = useCollection<CollabRoom>(userRoomsQuery);
+
+  const roomsAvailable = MAX_ROOMS - (allRooms?.length || 0);
+  const areRoomsFull = roomsAvailable <= 0;
 
   const handleDeleteRoom = async (roomId: string) => {
     try {
@@ -70,6 +83,15 @@ export default function CollabPage() {
     }
   };
 
+  const handleCopyCode = (code: string | undefined) => {
+    if (!code) return;
+    navigator.clipboard.writeText(code);
+    toast({
+      title: "Invite Code Copied!",
+      description: "You can now share it with your friends.",
+    });
+  };
+
   return (
     <div>
       <PageTitle
@@ -80,14 +102,14 @@ export default function CollabPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
             <h3 className="text-xl font-semibold">Your Rooms</h3>
-            {isLoading && (
+            {userRoomsLoading && (
             <Card className="bg-card/50 backdrop-blur-sm border-border/50">
                     <CardContent className="p-10 text-center text-muted-foreground">
                         <p>Loading your study rooms...</p>
                     </CardContent>
                 </Card>
             )}
-            {!isLoading && privateRooms && privateRooms.length > 0 ? (
+            {!userRoomsLoading && privateRooms && privateRooms.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {privateRooms.map((room) => (
                     <Card key={room.id} className="bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/50 transition-all flex flex-col">
@@ -99,16 +121,20 @@ export default function CollabPage() {
                         </CardHeader>
                         <CardContent className="flex-grow flex flex-col justify-end">
                             <span className="text-xs text-muted-foreground mb-4">{room.members.length} members</span>
-                            <div className="flex flex-col sm:flex-row gap-2">
+                             <div className="flex flex-col gap-2">
                                 <Button asChild size="sm" className="w-full">
                                     <Link href={`/rooms/${room.id}`}>
                                         Enter Room <ArrowRight className="ml-2 h-4 w-4" />
                                     </Link>
                                 </Button>
+                                <div className="flex gap-2">
+                                  <Button variant="secondary" size="sm" className="w-full" onClick={() => handleCopyCode(room.inviteCode)}>
+                                    <Copy className="h-4 w-4 mr-2" /> Copy Code
+                                  </Button>
                                  {user && user.uid === room.createdBy && (
                                   <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                      <Button variant="destructive" size="sm" className="w-full sm:w-auto">
+                                      <Button variant="destructive" size="sm" className="w-auto">
                                         <Trash2 className="h-4 w-4" />
                                       </Button>
                                     </AlertDialogTrigger>
@@ -128,13 +154,14 @@ export default function CollabPage() {
                                     </AlertDialogContent>
                                   </AlertDialog>
                                 )}
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
                 ))}
                 </div>
             ) : (
-            !isLoading && (
+            !userRoomsLoading && (
             <Card className="bg-card/50 backdrop-blur-sm border-border/50">
                 <CardContent className="p-10 text-center text-muted-foreground">
                 <p>You haven't joined or created any private rooms yet.</p>
@@ -144,6 +171,19 @@ export default function CollabPage() {
             )}
         </div>
         <div className="space-y-4">
+            <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Users />Room Availability</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center">
+                {allRoomsLoading ? <Skeleton className="h-10 w-3/4 mx-auto" /> : (
+                  <>
+                    <p className="text-4xl font-bold">{roomsAvailable}</p>
+                    <p className="text-muted-foreground">out of {MAX_ROOMS} rooms available</p>
+                  </>
+                )}
+              </CardContent>
+            </Card>
              <Card className="bg-card/50 backdrop-blur-sm border-border/50">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -155,7 +195,26 @@ export default function CollabPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Button onClick={() => setCreateOpen(true)} className="w-full">Create a New Room</Button>
+                    {areRoomsFull ? (
+                       <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                              <Button className="w-full" disabled>Create a New Room</Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                              <AlertDialogHeader>
+                                  <AlertDialogTitle>All Rooms Are Full</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    We have reached the maximum number of concurrent rooms. Please contact an administrator to request more capacity.
+                                  </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                  <AlertDialogAction>OK</AlertDialogAction>
+                              </AlertDialogFooter>
+                          </AlertDialogContent>
+                      </AlertDialog>
+                    ) : (
+                      <Button onClick={() => setCreateOpen(true)} className="w-full">Create a New Room</Button>
+                    )}
                 </CardContent>
             </Card>
              <Card className="bg-card/50 backdrop-blur-sm border-border/50">
