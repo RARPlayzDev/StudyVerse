@@ -1,4 +1,6 @@
-import type { User, Task, Note, CollabRoom, FocusSession } from './types';
+import type { User, Task, Note, CollabRoom, FocusSession, Message } from './types';
+import { Timestamp } from 'firebase/firestore';
+
 
 export const placeholderUsers: User[] = [
   { id: '1', name: 'Alex Johnson', email: 'alex@example.com', avatarUrl: 'https://picsum.photos/seed/user1/100/100', role: 'student', joinDate: '2023-09-01', lastActive: '2 hours ago', banned: false },
@@ -8,45 +10,43 @@ export const placeholderUsers: User[] = [
 ];
 
 export const placeholderTasks: Task[] = [
-  { id: 't1', title: 'Complete Chapter 5 Reading', subject: 'History', dueDate: '2024-08-15', priority: 'high', status: 'inprogress' },
-  { id: 't2', title: 'Solve Problem Set 3', subject: 'Calculus', dueDate: '2024-08-12', priority: 'high', status: 'todo' },
-  { id: 't3', title: 'Prepare for Midterm', subject: 'Physics', dueDate: '2024-08-20', priority: 'medium', status: 'todo' },
-  { id: 't4', title: 'Finish Lab Report', subject: 'Chemistry', dueDate: '2024-08-10', priority: 'low', status: 'done' },
-  { id: 't5', title: 'Build React Component', subject: 'CS', dueDate: '2024-08-18', priority: 'high', status: 'inprogress' },
-  { id: 't6', title: 'Write Essay Outline', subject: 'Literature', dueDate: '2024-08-14', priority: 'medium', status: 'done' },
+  { id: 't1', userId: '1', title: 'Complete Chapter 5 Reading', subject: 'History', startDate: '2024-08-10', dueDate: '2024-08-15', priority: 'high', status: 'inprogress' },
+  { id: 't2', userId: '1', title: 'Solve Problem Set 3', subject: 'Calculus', startDate: '2024-08-10', dueDate: '2024-08-12', priority: 'high', status: 'todo' },
+  { id: 't3', userId: '1', title: 'Prepare for Midterm', subject: 'Physics', startDate: '2024-08-15', dueDate: '2024-08-20', priority: 'medium', status: 'todo' },
+  { id: 't4', userId: '1', title: 'Finish Lab Report', subject: 'Chemistry', startDate: '2024-08-08', dueDate: '2024-08-10', priority: 'low', status: 'done' },
+  { id: 't5', userId: '1', title: 'Build React Component', subject: 'CS', startDate: '2024-08-12', dueDate: '2024-08-18', priority: 'high', status: 'inprogress' },
+  { id: 't6', userId: '1', title: 'Write Essay Outline', subject: 'Literature', startDate: '2024-08-11', dueDate: '2024-08-14', priority: 'medium', status: 'done' },
 ];
 
 export const placeholderNotes: Note[] = [
-  { id: 'n1', title: 'Calculus Cheat Sheet', subject: 'Calculus', uploader: 'Maria Garcia', uploaderAvatar: 'https://picsum.photos/seed/user2/100/100', date: '2024-08-01', downloads: 152, fileUrl: '#', fileType: 'pdf' },
-  { id: 'n2', title: 'WWII Key Events', subject: 'History', uploader: 'Alex Johnson', uploaderAvatar: 'https://picsum.photos/seed/user1/100/100', date: '2024-07-28', downloads: 89, fileUrl: '#', fileType: 'md' },
-  { id: 'n3', title: 'Quantum Mechanics Intro', subject: 'Physics', uploader: 'Admin User', uploaderAvatar: 'https://picsum.photos/seed/admin/100/100', date: '2024-08-05', downloads: 210, fileUrl: '#', fileType: 'pdf' },
-  { id: 'n4', title: 'Organic Chemistry Reactions', subject: 'Chemistry', uploader: 'Maria Garcia', uploaderAvatar: 'https://picsum.photos/seed/user2/100/100', date: '2024-07-30', downloads: 120, fileUrl: '#', fileType: 'pdf' },
+    { id: 'n1', userId: '2', title: 'Calculus Cheat Sheet', subject: 'Calculus', uploader: 'Maria Garcia', date: Timestamp.fromDate(new Date('2024-08-01')), downloads: 152, fileUrl: '#', fileType: 'pdf' },
+    { id: 'n2', userId: '1', title: 'WWII Key Events', subject: 'History', uploader: 'Alex Johnson', date: Timestamp.fromDate(new Date('2024-07-28')), downloads: 89, fileUrl: '#', fileType: 'md' },
+    { id: 'n3', userId: '3', title: 'Quantum Mechanics Intro', subject: 'Physics', uploader: 'Admin User', date: Timestamp.fromDate(new Date('2024-08-05')), downloads: 210, fileUrl: '#', fileType: 'pdf' },
+    { id: 'n4', userId: '2', title: 'Organic Chemistry Reactions', subject: 'Chemistry', uploader: 'Maria Garcia', date: Timestamp.fromDate(new Date('2024-07-30')), downloads: 120, fileUrl: '#', fileType: 'pdf' },
 ];
 
 export const placeholderRooms: CollabRoom[] = [
-  {
-    id: 'r1',
-    topic: 'Finals Prep Group - CS101',
-    createdBy: 'Alex Johnson',
-    memberCount: 12,
-    messages: [
-      { id: 'm1', sender: 'Alex Johnson', senderAvatar: 'https://picsum.photos/seed/user1/100/100', text: 'Hey everyone, ready to grind for the finals?', timestamp: '10:30 AM' },
-      { id: 'm2', sender: 'Maria Garcia', senderAvatar: 'https://picsum.photos/seed/user2/100/100', text: 'Born ready! Does anyone have notes for chapter 7?', timestamp: '10:31 AM' },
-    ]
-  },
-  { id: 'r2', topic: 'History Buffs 🏛️', createdBy: 'Maria Garcia', memberCount: 8, messages: [] },
-  { id: 'r3', topic: 'Physics Problems Help', createdBy: 'Ken Adams', memberCount: 23, messages: [] },
+    {
+        id: 'r1',
+        topic: 'Finals Prep Group - CS101',
+        description: "Let's ace this final together!",
+        type: 'private',
+        createdBy: '1',
+        members: ['1', '2'],
+    },
+    { id: 'r2', topic: 'History Buffs 🏛️', description: 'Discussing ancient civilizations.', type: 'private', createdBy: '2', members: ['2'] },
+    { id: 'r3', topic: 'Physics Problems Help', description: 'Stuck on problem sets? Join us.', type: 'private', createdBy: '4', members: ['4', '1'] },
 ];
 
 export const placeholderFocusSessions: FocusSession[] = [
-    { id: 'fs1', userId: '1', duration: 50, date: '2024-08-01', taskTag: 'History' },
-    { id: 'fs2', userId: '1', duration: 25, date: '2024-08-01', taskTag: 'Calculus' },
-    { id: 'fs3', userId: '1', duration: 75, date: '2024-08-02', taskTag: 'Physics' },
-    { id: 'fs4', userId: '1', duration: 50, date: '2024-08-03', taskTag: 'History' },
-    { id: 'fs5', userId: '1', duration: 25, date: '2024-08-04', taskTag: 'CS' },
-    { id: 'fs6', userId: '1', duration: 100, date: '2024-08-05', taskTag: 'Physics' },
-    { id: 'fs7', userId: '1', duration: 50, date: '2024-08-06', taskTag: 'Calculus' },
-    { id: 'fs8', userId: '1', duration: 25, date: '2024-08-07', taskTag: 'History' },
+    { id: 'fs1', userId: '1', duration: 50, date: Timestamp.fromDate(new Date('2024-08-01')), taskTag: 'History' },
+    { id: 'fs2', userId: '1', duration: 25, date: Timestamp.fromDate(new Date('2024-08-01')), taskTag: 'Calculus' },
+    { id: 'fs3', userId: '1', duration: 75, date: Timestamp.fromDate(new Date('2024-08-02')), taskTag: 'Physics' },
+    { id: 'fs4', userId: '1', duration: 50, date: Timestamp.fromDate(new Date('2024-08-03')), taskTag: 'History' },
+    { id: 'fs5', userId: '1', duration: 25, date: Timestamp.fromDate(new Date('2024-08-04')), taskTag: 'CS' },
+    { id: 'fs6', userId: '1', duration: 100, date: Timestamp.fromDate(new Date('2024-08-05')), taskTag: 'Physics' },
+    { id: 'fs7', userId: '1', duration: 50, date: Timestamp.fromDate(new Date('2024-08-06')), taskTag: 'Calculus' },
+    { id: 'fs8', userId: '1', duration: 25, date: Timestamp.fromDate(new Date('2024-08-07')), taskTag: 'History' },
 ];
 
 export const weeklyFocusData = [

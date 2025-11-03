@@ -1,3 +1,4 @@
+
 'use client';
 import { placeholderRooms } from "@/lib/placeholder-data";
 import { Message } from "@/lib/types";
@@ -45,7 +46,7 @@ export default function ChatInterface({ messages, onSendMessage, isLoading, chat
                             <div className="text-xs text-muted-foreground">
                                 {message.timestamp instanceof Date 
                                     ? message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                    : message.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                    : message.timestamp?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                                 }
                             </div>
                         </div>
@@ -81,3 +82,4 @@ export default function ChatInterface({ messages, onSendMessage, isLoading, chat
         </div>
     );
 }
+
