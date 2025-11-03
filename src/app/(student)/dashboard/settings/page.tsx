@@ -113,7 +113,16 @@ export default function SettingsPage() {
         passwordForm.reset();
     } catch (error: any) {
         console.error(error);
-        toast({ title: 'Error updating password', description: 'Please log out and log in again before changing your password.', variant: 'destructive' });
+        if (error.code === 'auth/requires-recent-login') {
+            toast({
+                title: 'Action Required',
+                description: 'This is a sensitive action. Please log out and log in again before changing your password.',
+                variant: 'destructive',
+                duration: 8000,
+            });
+        } else {
+            toast({ title: 'Error updating password', description: error.message, variant: 'destructive' });
+        }
     } finally {
         setPasswordSaving(false);
     }
@@ -130,7 +139,16 @@ export default function SettingsPage() {
         // The user will be signed out and redirected by the auth state listener.
     } catch (error: any) {
         console.error(error);
-        toast({ title: 'Error deleting account', description: 'Please log out and log in again before deleting your account.', variant: 'destructive' });
+         if (error.code === 'auth/requires-recent-login') {
+            toast({
+                title: 'Action Required',
+                description: 'This is a sensitive action. Please log out and log in again before deleting your account.',
+                variant: 'destructive',
+                duration: 8000,
+            });
+        } else {
+            toast({ title: 'Error deleting account', description: error.message, variant: 'destructive' });
+        }
     } finally {
         setDeleteDialogOpen(false);
     }
