@@ -31,6 +31,7 @@ import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { updateProfile } from 'firebase/auth';
 import { useTheme } from 'next-themes';
+import { Badge } from '@/components/ui/badge';
 
 const profileFormSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters.'),
@@ -116,21 +117,26 @@ export default function SettingsPage() {
         {/* Profile Settings */}
         <Card className="bg-card/50 backdrop-blur-sm border-border/50">
           <CardHeader>
-            <CardTitle>Profile</CardTitle>
+            <CardTitle>My Account</CardTitle>
             <CardDescription>
-              This is how others will see you on the site.
+              View and manage your personal information.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="flex items-center gap-4">
-                 <Avatar className="h-20 w-20">
+            <div className="flex items-center gap-6">
+                 <Avatar className="h-24 w-24">
                     {user?.photoURL && <AvatarImage src={user.photoURL} alt={userData?.name} data-ai-hint="person portrait" />}
-                    <AvatarFallback className="text-2xl">{userData?.name?.charAt(0) || user?.email?.charAt(0)}</AvatarFallback>
+                    <AvatarFallback className="text-3xl">{userData?.name?.charAt(0) || user?.email?.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <div>
+                <div className="space-y-2">
                      <p className="text-sm text-muted-foreground">Avatar customization is coming soon.</p>
+                     <h3 className="text-2xl font-semibold">{userData?.name || user?.displayName}</h3>
+                     <p className="text-muted-foreground">{user?.email}</p>
+                     {userData?.role && <Badge variant="secondary" className="capitalize">{userData.role}</Badge>}
                 </div>
             </div>
+
+            <Separator />
 
             <Form {...profileForm}>
                 <form onSubmit={profileForm.handleSubmit(handleProfileUpdate)} className="space-y-4">
@@ -143,6 +149,7 @@ export default function SettingsPage() {
                                 <FormControl>
                                     <Input placeholder="Your full name" {...field} />
                                 </FormControl>
+                                <FormDescription>This is how your name will be displayed.</FormDescription>
                                 <FormMessage />
                             </FormItem>
                         )}
