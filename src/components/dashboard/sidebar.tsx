@@ -29,11 +29,9 @@ const mainNavItems = [
   { href: '/dashboard/notes', icon: NotebookText, label: 'Notes Hub' },
   { href: '/dashboard/collab', icon: Users, label: 'Collab Space' },
   { href: '/dashboard/mentor', icon: BrainCircuit, label: 'AI Mentor' },
+  { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
 ];
 
-const accountNavItems = [
-    { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
-]
 
 export default function StudentSidebar() {
   const pathname = usePathname();
@@ -77,7 +75,6 @@ export default function StudentSidebar() {
           {mainNavItems.map(renderNavItem)}
         </nav>
         <div className="mt-auto flex flex-col items-center gap-4 px-2 py-4">
-           {accountNavItems.map(renderNavItem)}
           <Tooltip>
             <TooltipTrigger asChild>
               <button
