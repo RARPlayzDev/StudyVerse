@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import PageTitle from '@/components/common/page-title';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,9 +17,11 @@ import {
   DoorOpen,
   ChevronLeft,
   Sparkles,
+  Search,
+  RefreshCw,
 } from 'lucide-react';
-import { useUser, useFirestore, useMemoFirebase, useDoc, useCollection } from '@/firebase';
-import { collection, query, doc, deleteDoc, onSnapshot, addDoc, serverTimestamp, getDoc, orderBy, Timestamp, where, setDoc, Unsubscribe } from 'firebase/firestore';
+import { useUser, useFirestore, useMemoFirebase, useDoc } from '@/firebase';
+import { collection, query, doc, deleteDoc, onSnapshot, addDoc, serverTimestamp, getDoc, orderBy, Timestamp, where, setDoc, Unsubscribe, getDocs } from 'firebase/firestore';
 import type { CollabRoom, CollabRoomMember, Message, User as UserType } from '@/lib/types';
 import {
   DropdownMenu,
@@ -102,7 +104,8 @@ export default function CollabSpace() {
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [roomToLeave, setRoomToLeave] = useState<CollabRoom | null>(null);
-
+  const [searchQuery, setSearchQuery] = useState('');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const messageListenerRef = useRef<Unsubscribe | null>(null);
 
@@ -113,34 +116,32 @@ export default function CollabSpace() {
 
   const { data: userData } = useDoc<UserType>(userDocRef);
 
-  // Fetch rooms user is a member of
-  useEffect(() => {
+  const fetchUserRooms = useCallback(async () => {
     if (!user) return;
     setRoomsLoading(true);
-    const roomsQuery = query(collection(firestore, 'collabRooms'));
-    const unsubscribe = onSnapshot(roomsQuery, async (querySnapshot) => {
-        const userRooms: CollabRoom[] = [];
-        const promises = querySnapshot.docs.map(async (roomDoc) => {
-            const memberRef = doc(firestore, `collabRooms/${roomDoc.id}/members/${user.uid}`);
-            try {
-                const memberSnap = await getDoc(memberRef);
-                if (memberSnap.exists()) {
-                    userRooms.push({ id: roomDoc.id, ...roomDoc.data() } as CollabRoom);
-                }
-            } catch (e) {
-                // This is expected if we don't have permission, so we can ignore it.
-            }
-        });
-        await Promise.all(promises);
-        setRooms(userRooms);
-        setRoomsLoading(false);
-    }, (error) => {
-        console.error("Error fetching rooms list:", error);
-        setRoomsLoading(false);
+    
+    // Find all rooms where the user is a member
+    const userRooms: CollabRoom[] = [];
+    const roomsSnapshot = await getDocs(query(collection(firestore, 'collabRooms')));
+    
+    const membershipChecks = roomsSnapshot.docs.map(async (roomDoc) => {
+        const memberRef = doc(firestore, `collabRooms/${roomDoc.id}/members/${user.uid}`);
+        const memberSnap = await getDoc(memberRef);
+        if (memberSnap.exists()) {
+            userRooms.push({ id: roomDoc.id, ...roomDoc.data() } as CollabRoom);
+        }
     });
 
-    return () => unsubscribe();
+    await Promise.all(membershipChecks);
+
+    setRooms(userRooms);
+    setRoomsLoading(false);
   }, [user, firestore]);
+
+  // Fetch rooms user is a member of
+  useEffect(() => {
+    fetchUserRooms();
+  }, [user, firestore, fetchUserRooms, refreshTrigger]);
 
   // Fetch messages for selected room
   useEffect(() => {
@@ -183,42 +184,6 @@ export default function CollabSpace() {
         }
     };
   }, [selectedRoom, firestore]);
-
-  const handleCreateRoom = async () => {
-    if (!user || !userData) return;
-    if (!newRoomTopic.trim() || !newRoomDescription.trim()) {
-      toast({ title: "Please fill out all fields.", variant: "destructive" });
-      return;
-    }
-    setIsCreatingRoom(true);
-
-    try {
-        const newRoomData = {
-            topic: newRoomTopic,
-            description: newRoomDescription,
-            type: 'private' as const,
-            createdBy: user.uid,
-            inviteCode: generateInviteCode(),
-            createdAt: serverTimestamp(),
-        };
-        const roomDocRef = await addDoc(collection(firestore, 'collabRooms'), newRoomData);
-        
-        const memberRef = doc(firestore, 'collabRooms', roomDocRef.id, 'members', user.uid);
-        await setDoc(memberRef, { userId: user.uid, joinedAt: serverTimestamp() });
-        
-        toast({ title: "Room created successfully!", description: `Invite code: ${newRoomData.inviteCode}`});
-        const createdRoom = { id: roomDocRef.id, ...newRoomData, createdAt: new Date() } as CollabRoom;
-        setSelectedRoom(createdRoom);
-        setShowCreateRoom(false);
-        setNewRoomTopic('');
-        setNewRoomDescription('');
-    } catch (error) {
-        console.error(error);
-        toast({ title: "Failed to create room.", variant: "destructive" });
-    } finally {
-        setIsCreatingRoom(false);
-    }
-  };
   
   const handleSendMessage = async (text: string) => {
     if (!text.trim() || !selectedRoom || !user || !userData) return;
@@ -289,6 +254,53 @@ export default function CollabSpace() {
     setShowLeaveDialog(true);
   }
 
+  const filteredRooms = rooms.filter(room => 
+    room.topic.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleRoomCreated = (newRoom: CollabRoom) => {
+    setRooms(prev => [...prev, newRoom]);
+    setSelectedRoom(newRoom);
+    setShowCreateRoom(false);
+    setNewRoomTopic('');
+    setNewRoomDescription('');
+  };
+
+  const handleCreateRoom = async () => {
+    if (!user || !userData) return;
+    if (!newRoomTopic.trim() || !newRoomDescription.trim()) {
+      toast({ title: "Please fill out all fields.", variant: "destructive" });
+      return;
+    }
+    setIsCreatingRoom(true);
+
+    try {
+        const newRoomData = {
+            topic: newRoomTopic,
+            description: newRoomDescription,
+            type: 'private' as const,
+            createdBy: user.uid,
+            inviteCode: generateInviteCode(),
+            createdAt: serverTimestamp(),
+        };
+        const roomDocRef = await addDoc(collection(firestore, 'collabRooms'), newRoomData);
+        
+        const memberRef = doc(firestore, 'collabRooms', roomDocRef.id, 'members', user.uid);
+        await setDoc(memberRef, { userId: user.uid, joinedAt: serverTimestamp() });
+        
+        toast({ title: "Room created successfully!", description: `Invite code: ${newRoomData.inviteCode}`});
+        const createdRoom = { id: roomDocRef.id, ...newRoomData, createdAt: new Date() } as CollabRoom;
+        
+        handleRoomCreated(createdRoom);
+
+    } catch (error) {
+        console.error(error);
+        toast({ title: "Failed to create room.", variant: "destructive" });
+    } finally {
+        setIsCreatingRoom(false);
+    }
+  };
+
 
   return (
     <div className="flex h-[calc(100vh-8rem)] bg-gradient-to-br from-slate-900 to-purple-950 -m-4 sm:-m-6">
@@ -316,6 +328,21 @@ export default function CollabSpace() {
           <div className='mb-4'>
             <Badge variant="secondary">{rooms.length} rooms joined</Badge>
           </div>
+          <div className="mb-4 flex gap-2">
+            <div className="relative flex-grow">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Search rooms..." 
+                className="pl-8 bg-background/50 h-9"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setRefreshTrigger(t => t + 1)}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </div>
+
 
           {showCreateRoom && (
             <motion.div
@@ -354,7 +381,7 @@ export default function CollabSpace() {
             </motion.div>
           )}
 
-          <JoinCollabRoomDialog open={showJoinRoom} onOpenChange={setShowJoinRoom} />
+          <JoinCollabRoomDialog open={showJoinRoom} onOpenChange={setShowJoinRoom} onRoomJoined={() => setRefreshTrigger(t => t + 1)} />
           {roomToLeave && (
             <LeaveRoomDialog 
                 open={showLeaveDialog}
@@ -367,7 +394,7 @@ export default function CollabSpace() {
 
           <div className="space-y-3 overflow-y-auto flex-1">
             {roomsLoading && <p className="text-muted-foreground">Loading rooms...</p>}
-            {rooms.map((room, index) => (
+            {filteredRooms.map((room, index) => (
               <motion.div
                 key={room.id}
                 initial={{ opacity: 0, x: -20 }}
@@ -391,7 +418,9 @@ export default function CollabSpace() {
                 </div>
               </motion.div>
             ))}
-            {!roomsLoading && rooms.length === 0 && <p className="text-muted-foreground text-sm">You haven't joined any rooms yet.</p>}
+            {!roomsLoading && filteredRooms.length === 0 && <p className="text-muted-foreground text-sm p-4 text-center">
+              {searchQuery ? 'No rooms match your search.' : "You haven't joined any rooms yet."}
+            </p>}
           </div>
             <div className="mt-auto pt-4">
                 <Card className="bg-card/50 backdrop-blur-sm border-border/50 text-center">

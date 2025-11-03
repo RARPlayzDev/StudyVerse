@@ -52,11 +52,13 @@ type JoinRoomFormValues = z.infer<typeof joinRoomSchema>;
 interface JoinCollabRoomDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onRoomJoined: () => void;
 }
 
 export default function JoinCollabRoomDialog({
   open,
   onOpenChange,
+  onRoomJoined,
 }: JoinCollabRoomDialogProps) {
   const [isJoining, setIsJoining] = useState(false);
   const { user } = useUser();
@@ -142,6 +144,7 @@ export default function JoinCollabRoomDialog({
 
       form.reset();
       onOpenChange(false);
+      onRoomJoined(); // Trigger refresh
     } catch (error) {
       console.error('Failed to join room:', error);
       toast({
