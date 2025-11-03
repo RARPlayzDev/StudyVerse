@@ -11,7 +11,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Button } from '@/components/ui/button';
 import { DoorOpen, Music2, User as UserIcon, Copy } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 
@@ -19,8 +19,9 @@ function MemberList({ memberIds }: { memberIds: string[] }) {
     const firestore = useFirestore();
 
     const usersQuery = useMemoFirebase(() => {
-        if (memberIds.length === 0) return null;
-        return query(collection(firestore, 'users'), where('id', 'in', memberIds));
+        if (!memberIds || memberIds.length === 0) return null;
+        // Firestore 'in' queries are limited to 10 items. For a larger app, this would need pagination.
+        return query(collection(firestore, 'users'), where('id', 'in', memberIds.slice(0, 10)));
     }, [firestore, memberIds]);
 
     const { data: members, isLoading } = useCollection<UserType>(usersQuery);
@@ -59,7 +60,7 @@ export default function CollabRoomPage() {
     return doc(firestore, 'collabRooms', roomId as string);
   }, [firestore, roomId]);
 
-  const { data: room, isLoading: isRoomLoading, error: roomError } = useDoc<CollabRoom>(roomRef);
+  const { data: room, isLoading: isRoomLoading } = useDoc<CollabRoom>(roomRef);
 
   const messagesQuery = useMemoFirebase(() => {
     if (!roomId) return null;
@@ -69,18 +70,26 @@ export default function CollabRoomPage() {
   const { data: messages, isLoading: areMessagesLoading } = useCollection<Message>(messagesQuery);
   
   useEffect(() => {
+    // Only perform redirects after all data has loaded
     if (!isRoomLoading && !isUserLoading) {
-      if (roomError || !room) {
+      if (!room) {
+        // If room doesn't exist after loading, it's a true 404
         return notFound();
       }
       if (!user) {
+        // If user isn't logged in, send to login
         router.push('/login');
       } else if (!room.members.includes(user.uid)) {
-        // This case might happen if user was removed or left, redirect them.
+        // If user is not a member, send to collab dashboard
+        toast({
+          title: "Access Denied",
+          description: "You are not a member of this room.",
+          variant: "destructive",
+        });
         router.push('/dashboard/collab');
       }
     }
-  }, [room, user, isRoomLoading, isUserLoading, roomError, router]);
+  }, [room, user, isRoomLoading, isUserLoading, router, toast]);
 
   const handleSendMessage = (text: string) => {
     if (!user || !roomId) return;
@@ -108,8 +117,8 @@ export default function CollabRoomPage() {
   const handleLeaveOrDeleteRoom = async () => {
     if (!user || !roomRef || !room) return;
     
+    // Creator deletes the room entirely
     if (user.uid === room.createdBy) {
-      // Creator deletes the room
       await deleteDoc(roomRef);
       toast({ title: 'Room Deleted', description: 'As the creator, you have deleted the room.' });
       router.push('/dashboard/collab');
@@ -131,11 +140,20 @@ export default function CollabRoomPage() {
       description: "You can now share it with others.",
     });
   };
-
+  
   const isLoading = isUserLoading || isRoomLoading;
-  const canRender = !isLoading && room && user && room.members.includes(user.uid);
 
-  if (isLoading || !canRender) {
+  if (isLoading) {
+    return (
+        <div className="flex min-h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-gray-950 via-slate-900 to-purple-950">
+            <p className="text-white">Loading Room...</p>
+        </div>
+    )
+  }
+
+  // Final check to ensure we only render if everything is loaded and valid
+  if (!room || !user || !room.members.includes(user.uid)) {
+    // This will show the loading screen while the useEffect hook handles the redirect.
     return (
         <div className="flex min-h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-gray-950 via-slate-900 to-purple-950">
             <p className="text-white">Loading Room...</p>
@@ -148,7 +166,7 @@ export default function CollabRoomPage() {
         <main className="flex-1 grid grid-cols-1 lg:grid-cols-[320px_1fr_320px] gap-6">
             
             {/* Left Sidebar */}
-            <div className="lg:flex flex-col gap-6 h-full">
+            <div className="flex flex-col gap-6 h-full">
                 <MemberList memberIds={room.members} />
             </div>
 
@@ -178,7 +196,7 @@ export default function CollabRoomPage() {
             </Card>
 
             {/* Right Sidebar */}
-            <div className="lg:flex flex-col gap-6 h-full">
+            <div className="flex flex-col gap-6 h-full">
                 <Card className="bg-card/50 backdrop-blur-sm border-border/50">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><Music2/> Study Music</CardTitle>
