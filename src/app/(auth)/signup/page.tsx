@@ -35,21 +35,18 @@ export default function SignupPage() {
 
   useEffect(() => {
     if (user) {
-      // After signup, new users are students, redirect to dashboard.
-      // Admin redirect is handled on the login page logic.
       router.push('/dashboard');
     }
   }, [user, router]);
 
   const createUserProfile = async (user: User, name: string) => {
     const userRef = doc(firestore, 'users', user.uid);
-    const role = user.email === 'kaarthik@studysync.app' ? 'admin' : 'student';
-
+    
     const newUser = {
       id: user.uid,
       name,
       email: user.email,
-      role: role,
+      role: 'student',
       joinDate: new Date().toISOString(),
       lastActive: new Date().toISOString(),
       banned: false,
@@ -63,21 +60,6 @@ export default function SignupPage() {
       });
       errorEmitter.emit('permission-error', permissionError);
     });
-    
-    // If the user is the special admin, create a role document for them.
-    if (role === 'admin') {
-        const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
-        try {
-            await setDoc(adminRoleRef, { grantedAt: new Date().toISOString() });
-        } catch (serverError) {
-             const permissionError = new FirestorePermissionError({
-                path: adminRoleRef.path,
-                operation: 'create',
-                requestResourceData: { grantedAt: "timestamp" }
-            });
-            errorEmitter.emit('permission-error', permissionError);
-        }
-    }
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {

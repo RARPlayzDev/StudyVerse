@@ -10,10 +10,9 @@ import { Label } from "@/components/ui/label";
 import Logo from "@/components/common/logo";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth, useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
+import { useAuth, useUser } from "@/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { signInWithGoogle } from "@/firebase/auth/google-signin";
-import { doc } from "firebase/firestore";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -22,24 +21,12 @@ export default function LoginPage() {
   const router = useRouter();
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
-  const firestore = useFirestore();
-
-  const adminRoleRef = useMemoFirebase(() => {
-    if (!user) return null;
-    return doc(firestore, 'roles_admin', user.uid);
-  }, [firestore, user]);
-
-  const { data: adminRole, isLoading: isAdminRoleLoading } = useDoc(adminRoleRef);
   
   useEffect(() => {
-    if (!isUserLoading && !isAdminRoleLoading && user) {
-        if (adminRole) {
-             router.push("/admin");
-        } else {
-             router.push("/dashboard");
-        }
+    if (!isUserLoading && user) {
+      router.push("/dashboard");
     }
-  }, [user, adminRole, isUserLoading, isAdminRoleLoading, router]);
+  }, [user, isUserLoading, router]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
