@@ -23,11 +23,11 @@ import { useAuth } from '@/firebase';
 import { useRouter } from 'next/navigation';
 
 const navItems = [
-  { href: '/admin', icon: LayoutDashboard, label: 'Admin Panel' },
-  { href: '/admin/users', icon: Users, label: 'User Management' },
-  { href: '/admin/content', icon: Archive, label: 'Content' },
-  { href: '/admin/collab', icon: Users, label: 'Collab Rooms' },
-  { href: '/admin/reports', icon: BarChart3, label: 'AI Reports' },
+  { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Admin Panel' },
+  { href: '/admin/dashboard/users', icon: Users, label: 'User Management' },
+  { href: '/admin/dashboard/content', icon: Archive, label: 'Content' },
+  { href: '/admin/dashboard/collab', icon: Users, label: 'Collab Rooms' },
+  { href: '/admin/dashboard/reports', icon: BarChart3, label: 'AI Reports' },
 ];
 
 const bottomNavItems = [
@@ -41,11 +41,11 @@ export default function AdminSidebar() {
 
   const handleLogout = async () => {
       await auth.signOut();
-      router.push('/admin/login');
+      router.push('/admin');
   }
 
   const renderNavItem = (item: { href: string; icon: React.ElementType; label: string }) => {
-    const isActive = pathname.startsWith(item.href) && (item.href !== '/admin' || pathname === '/admin');
+    const isActive = pathname.startsWith(item.href) && (item.href !== '/admin/dashboard' || pathname === '/admin/dashboard');
     const Icon = item.icon;
     return (
       <Tooltip key={item.href}>
