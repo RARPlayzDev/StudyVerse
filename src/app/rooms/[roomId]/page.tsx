@@ -2,7 +2,7 @@
 'use client';
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { useDoc, useFirestore, useUser, useMemoFirebase, useCollection } from '@/firebase';
-import { doc, collection, addDoc, serverTimestamp, query, orderBy, Timestamp, updateDoc, arrayRemove, deleteDoc } from 'firebase/firestore';
+import { doc, collection, addDoc, serverTimestamp, query, orderBy, Timestamp, updateDoc, arrayRemove, deleteDoc, where } from 'firebase/firestore';
 import type { CollabRoom, Message, User as UserType } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -143,16 +143,8 @@ export default function CollabRoomPage() {
   
   const isLoading = isUserLoading || isRoomLoading;
 
-  if (isLoading) {
-    return (
-        <div className="flex min-h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-gray-950 via-slate-900 to-purple-950">
-            <p className="text-white">Loading Room...</p>
-        </div>
-    )
-  }
-
   // Final check to ensure we only render if everything is loaded and valid
-  if (!room || !user || !room.members.includes(user.uid)) {
+  if (isLoading || !room || !user || !room.members.includes(user.uid)) {
     // This will show the loading screen while the useEffect hook handles the redirect.
     return (
         <div className="flex min-h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-gray-950 via-slate-900 to-purple-950">
@@ -217,3 +209,4 @@ export default function CollabRoomPage() {
     </div>
   );
 }
+
