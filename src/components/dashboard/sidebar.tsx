@@ -30,11 +30,10 @@ const mainNavItems = [
   { href: '/dashboard/notes', icon: NotebookText, label: 'Notes Hub' },
   { href: '/dashboard/collab', icon: Users, label: 'Collab Space' },
   { href: '/dashboard/mentor', icon: BrainCircuit, label: 'AI Mentor' },
-];
-
-const bottomNavItems = [
   { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
 ];
+
+const bottomNavItems: { href: string; icon: React.ElementType; label: string }[] = [];
 
 export default function StudentSidebar() {
   const pathname = usePathname();
