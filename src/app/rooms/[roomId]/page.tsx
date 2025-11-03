@@ -2,8 +2,8 @@
 'use client';
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { useDoc, useFirestore, useUser, useMemoFirebase, useCollection } from '@/firebase';
-import { doc, collection, addDoc, serverTimestamp, query, orderBy, Timestamp, updateDoc, arrayRemove } from 'firebase/firestore';
-import type { CollabRoom, Message } from '@/lib/types';
+import { doc, collection, addDoc, serverTimestamp, query, orderBy, Timestamp, updateDoc, arrayRemove, where } from 'firebase/firestore';
+import type { CollabRoom, Message, User as UserProfile } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import ChatInterface from '@/components/collab/chat-interface';
@@ -12,7 +12,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { Button } from '@/components/ui/button';
 import { DoorOpen, Music2, User as UserIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
 export default function CollabRoomPage() {
   const { roomId } = useParams();
@@ -25,7 +25,14 @@ export default function CollabRoomPage() {
     return doc(firestore, 'collabRooms', roomId as string);
   }, [firestore, roomId]);
 
-  const { data: room, isLoading: isRoomLoading } = useDoc<CollabRoom>(roomRef);
+  const { data: room, isLoading: isRoomLoading, error: roomError } = useDoc<CollabRoom>(roomRef);
+
+  const membersQuery = useMemoFirebase(() => {
+    if (!room || room.members.length === 0) return null;
+    return query(collection(firestore, 'users'), where('id', 'in', room.members));
+  }, [firestore, room]);
+
+  const { data: memberProfiles, isLoading: areMembersLoading } = useCollection<UserProfile>(membersQuery);
 
   const messagesQuery = useMemoFirebase(() => {
     if (!roomId) return null;
@@ -35,19 +42,15 @@ export default function CollabRoomPage() {
   const { data: messages, isLoading: areMessagesLoading } = useCollection<Message>(messagesQuery);
   
   useEffect(() => {
-    // Only perform the check once both the user and room data have finished loading.
-    if (!isUserLoading && !isRoomLoading) {
-      if (!room) {
-        // If the room doesn't exist after loading, it's a 404
+    if (!isRoomLoading) {
+      if (roomError || !room) {
         return notFound();
       }
-      if (!user || !room.members.includes(user.uid)) {
-          // If the user is not a member, redirect them.
+      if (!isUserLoading && user && !room.members.includes(user.uid)) {
           router.push('/dashboard/collab');
       }
     }
-  }, [room, user, isRoomLoading, isUserLoading, router, notFound]);
-
+  }, [room, user, isRoomLoading, isUserLoading, roomError, router, notFound]);
 
   if (isUserLoading || isRoomLoading || !room || !user || !room.members.includes(user.uid)) {
     return (
@@ -56,8 +59,6 @@ export default function CollabRoomPage() {
         </div>
     )
   }
-  
-  const memberProfiles = room.members.map(id => ({ id, name: id.substring(0, 8) + '...', avatarUrl: `https://picsum.photos/seed/${id}/100/100` })) || [];
 
   const handleSendMessage = (text: string) => {
     if (!user || !roomId) return;
@@ -95,13 +96,13 @@ export default function CollabRoomPage() {
         <main className="flex-1 grid grid-cols-1 lg:grid-cols-[320px_1fr_320px] gap-6">
             
             {/* Left Sidebar */}
-            <div className="lg:flex flex-col gap-6 h-full">
+            <div className="flex flex-col gap-6 h-full">
                  <Card className="bg-card/50 backdrop-blur-sm border-border/50 flex-1 flex flex-col">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><UserIcon className="h-5 w-5" /> Members ({memberProfiles?.length || 0})</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4 overflow-y-auto flex-1 p-6">
-                       {isRoomLoading ? Array.from({length: 3}).map((_,i) => <Skeleton key={i} className="h-8 w-full" />) 
+                       {areMembersLoading ? Array.from({length: 3}).map((_,i) => <Skeleton key={i} className="h-8 w-full" />) 
                        : memberProfiles?.map(member => (
                            <div key={member.id} className="flex items-center gap-3">
                                <Avatar className="h-8 w-8 relative">
@@ -136,7 +137,7 @@ export default function CollabRoomPage() {
             </Card>
 
             {/* Right Sidebar */}
-            <div className="hidden lg:flex flex-col gap-6 h-full">
+            <div className="flex flex-col gap-6 h-full">
                 <Card className="bg-card/50 backdrop-blur-sm border-border/50">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><Music2/> Study Music</CardTitle>
