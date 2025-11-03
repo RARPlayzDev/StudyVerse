@@ -36,16 +36,19 @@ export default function CollabRoomPage() {
   
   useEffect(() => {
     // Only perform the check once both the user and room data have finished loading.
-    if (!isUserLoading && !isRoomLoading && room && user) {
-        if (!room.members.includes(user.uid)) {
+    if (!isUserLoading && !isRoomLoading && room) {
+        if (!user || !room.members.includes(user.uid)) {
             // If the user is not a member, redirect them.
             router.push('/dashboard/collab');
         }
+    } else if (!isUserLoading && !isRoomLoading && !room) {
+        // If the room doesn't exist after loading, it's a 404
+        notFound();
     }
-  }, [room, user, isRoomLoading, isUserLoading, router]);
+  }, [room, user, isRoomLoading, isUserLoading, router, notFound]);
 
 
-  if (isRoomLoading || isUserLoading) {
+  if (isUserLoading || isRoomLoading) {
     return (
         <div className="flex min-h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-gray-950 via-slate-900 to-purple-950">
             <p className="text-white">Loading Room...</p>
@@ -53,13 +56,8 @@ export default function CollabRoomPage() {
     )
   }
   
-  // After loading, if the room doesn't exist, show a 404.
-  if (!room) {
-    notFound();
-  }
-
-  // After loading, if user is not in the room, show a redirecting message while the useEffect kicks in.
-  if (!user || !room.members.includes(user.uid)) {
+  // After loading, if user is not in the room (or no user), show a redirecting message while the useEffect kicks in.
+  if (!user || !room?.members.includes(user.uid)) {
       return (
         <div className="flex min-h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-gray-950 via-slate-900 to-purple-950">
             <p className="text-white">Access Denied. Redirecting...</p>
@@ -102,8 +100,30 @@ export default function CollabRoomPage() {
 
   return (
     <div className="min-h-screen w-full flex flex-col p-4 sm:p-6 bg-gradient-to-br from-gray-950 via-slate-900 to-purple-950">
-        <main className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+        <main className="flex-1 grid grid-cols-1 lg:grid-cols-[320px_1fr_320px] gap-6">
             
+            {/* Left Sidebar */}
+            <div className="hidden lg:flex flex-col gap-6 h-full">
+                 <Card className="bg-card/50 backdrop-blur-sm border-border/50 flex-1 flex flex-col">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><UserIcon className="h-5 w-5" /> Members ({memberProfiles?.length || 0})</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4 overflow-y-auto flex-1 p-6">
+                       {isRoomLoading ? Array.from({length: 3}).map((_,i) => <Skeleton key={i} className="h-8 w-full" />) 
+                       : memberProfiles?.map(member => (
+                           <div key={member.id} className="flex items-center gap-3">
+                               <Avatar className="h-8 w-8 relative">
+                                   <AvatarImage src={member.avatarUrl} data-ai-hint="person portrait"/>
+                                   <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                                   <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-card" />
+                               </Avatar>
+                               <span>{member.name}</span>
+                           </div>
+                       ))}
+                    </CardContent>
+                </Card>
+            </div>
+
             {/* Main Chat Panel */}
             <Card className="flex-1 bg-card/50 backdrop-blur-sm border-border/50 h-full flex flex-col overflow-hidden">
                 <CardHeader className="py-3 px-4 border-b border-border/50 flex-row items-center justify-between">
@@ -125,24 +145,6 @@ export default function CollabRoomPage() {
 
             {/* Right Sidebar */}
             <div className="hidden lg:flex flex-col gap-6 h-full">
-                 <Card className="bg-card/50 backdrop-blur-sm border-border/50 flex-1 flex flex-col">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><UserIcon className="h-5 w-5" /> Members ({memberProfiles?.length || 0})</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4 overflow-y-auto flex-1 p-6">
-                       {isRoomLoading ? Array.from({length: 3}).map((_,i) => <Skeleton key={i} className="h-8 w-full" />) 
-                       : memberProfiles?.map(member => (
-                           <div key={member.id} className="flex items-center gap-3">
-                               <Avatar className="h-8 w-8 relative">
-                                   <AvatarImage src={member.avatarUrl} data-ai-hint="person portrait"/>
-                                   <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
-                                   <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-card" />
-                               </Avatar>
-                               <span>{member.name}</span>
-                           </div>
-                       ))}
-                    </CardContent>
-                </Card>
                 <Card className="bg-card/50 backdrop-blur-sm border-border/50">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><Music2/> Study Music</CardTitle>
