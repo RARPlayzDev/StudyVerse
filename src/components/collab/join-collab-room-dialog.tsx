@@ -168,13 +168,16 @@ export default function JoinCollabRoomDialog({
                 <FormItem className="flex flex-col items-center">
                   <FormLabel>Invite Code</FormLabel>
                   <FormControl>
-                     <InputOTP maxLength={6} {...field} render={({slots}) => (
-                        <InputOTPGroup>
-                            {slots.map((slot, index) => (
-                                <InputOTPSlot key={index} {...slot} />
-                            ))}
-                        </InputOTPGroup>
-                     )} />
+                    <InputOTP maxLength={6} {...field}>
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} />
+                        <InputOTPSlot index={1} />
+                        <InputOTPSlot index={2} />
+                        <InputOTPSlot index={3} />
+                        <InputOTPSlot index={4} />
+                        <InputOTPSlot index={5} />
+                      </InputOTPGroup>
+                    </InputOTP>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
