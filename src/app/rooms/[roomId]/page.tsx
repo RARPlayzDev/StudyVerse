@@ -1,3 +1,4 @@
+
 'use client';
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { useDoc, useFirestore, useUser, useMemoFirebase, useCollection } from '@/firebase';
@@ -15,7 +16,7 @@ import { useEffect } from 'react';
 
 export default function CollabRoomPage() {
   const { roomId } = useParams();
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
 
@@ -33,32 +34,40 @@ export default function CollabRoomPage() {
 
   const { data: messages, isLoading: areMessagesLoading } = useCollection<Message>(messagesQuery);
   
-  const memberProfiles = room?.members.map(id => ({ id, name: id.substring(0, 8) + '...', avatarUrl: `https://picsum.photos/seed/${id}/100/100` })) || [];
-  
   useEffect(() => {
-    // Security check: if room data has loaded and user is not in members array, redirect.
-    if (!isRoomLoading && room && user && !room.members.includes(user.uid)) {
-      router.push('/dashboard/collab');
+    // Only perform the check once both the user and room data have finished loading.
+    if (!isUserLoading && !isRoomLoading && room && user) {
+        if (!room.members.includes(user.uid)) {
+            // If the user is not a member, redirect them.
+            router.push('/dashboard/collab');
+        }
     }
-  }, [room, user, isRoomLoading, router]);
+  }, [room, user, isRoomLoading, isUserLoading, router]);
 
 
-  if (isRoomLoading) {
+  if (isRoomLoading || isUserLoading) {
     return (
-        <div className="flex min-h-screen w-full flex-col items-center justify-center">
-            <p>Loading Room...</p>
+        <div className="flex min-h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-gray-950 via-slate-900 to-purple-950">
+            <p className="text-white">Loading Room...</p>
         </div>
     )
   }
-
-  if (!room && !isRoomLoading) {
+  
+  // After loading, if the room doesn't exist, show a 404.
+  if (!room) {
     notFound();
   }
-  
-  // This check is now safe because we've handled the loading and not-found states above.
-  if (room && user && !room.members.includes(user.uid)) {
-      return <div className="flex items-center justify-center h-screen w-full"><p>Redirecting...</p></div>;
+
+  // After loading, if user is not in the room, show a redirecting message while the useEffect kicks in.
+  if (!user || !room.members.includes(user.uid)) {
+      return (
+        <div className="flex min-h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-gray-950 via-slate-900 to-purple-950">
+            <p className="text-white">Access Denied. Redirecting...</p>
+        </div>
+      );
   }
+  
+  const memberProfiles = room.members.map(id => ({ id, name: id.substring(0, 8) + '...', avatarUrl: `https://picsum.photos/seed/${id}/100/100` })) || [];
 
   const handleSendMessage = (text: string) => {
     if (!user || !roomId) return;
@@ -120,7 +129,7 @@ export default function CollabRoomPage() {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><UserIcon className="h-5 w-5" /> Members ({memberProfiles?.length || 0})</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4 overflow-y-auto flex-1">
+                    <CardContent className="space-y-4 overflow-y-auto flex-1 p-6">
                        {isRoomLoading ? Array.from({length: 3}).map((_,i) => <Skeleton key={i} className="h-8 w-full" />) 
                        : memberProfiles?.map(member => (
                            <div key={member.id} className="flex items-center gap-3">
