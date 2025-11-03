@@ -214,23 +214,19 @@ export default function CollabSpace() {
 
   const handleLeaveOrDeleteRoom = async (roomId: string, createdBy: string) => {
     if (!user) return;
-    
-    if (user.uid === createdBy) {
-      // Creator deletes the room
-      const roomRef = doc(firestore, 'collabRooms', roomId);
-      await deleteDoc(roomRef); // Note: Subcollections need a Cloud Function to be deleted reliably.
-      toast({ title: 'Room Deleted', description: 'As the creator, you have deleted the room.' });
-      if (selectedRoom?.id === roomId) {
+
+    if (selectedRoom?.id === roomId) {
         setSelectedRoom(null);
-      }
+    }
+
+    if (user.uid === createdBy) {
+      const roomRef = doc(firestore, 'collabRooms', roomId);
+      await deleteDoc(roomRef); 
+      toast({ title: 'Room Deleted', description: 'As the creator, you have deleted the room.' });
     } else {
-      // Member leaves the room
       const memberRef = doc(firestore, `collabRooms/${roomId}/members/${user.uid}`);
       await deleteDoc(memberRef);
       toast({ title: 'You Left the Room' });
-      if (selectedRoom?.id === roomId) {
-        setSelectedRoom(null);
-      }
     }
   };
 
