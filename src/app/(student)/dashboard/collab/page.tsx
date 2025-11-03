@@ -116,7 +116,7 @@ export default function CollabSpace() {
     const roomsQuery = query(collection(firestore, 'collabRooms'));
     const unsubscribe = onSnapshot(roomsQuery, async (querySnapshot) => {
         const userRooms: CollabRoom[] = [];
-        for (const roomDoc of querySnapshot.docs) {
+        const promises = querySnapshot.docs.map(async (roomDoc) => {
             const memberRef = doc(firestore, `collabRooms/${roomDoc.id}/members/${user.uid}`);
             try {
                 const memberSnap = await getDoc(memberRef);
@@ -124,9 +124,10 @@ export default function CollabSpace() {
                     userRooms.push({ id: roomDoc.id, ...roomDoc.data() } as CollabRoom);
                 }
             } catch (e) {
-                // Ignore permission errors for rooms we are not a member of
+                // This is expected if we don't have permission, so we can ignore it.
             }
-        }
+        });
+        await Promise.all(promises);
         setRooms(userRooms);
         setRoomsLoading(false);
     });
@@ -236,25 +237,26 @@ export default function CollabSpace() {
 
   const handleLeaveOrDeleteRoom = async (roomId: string, createdBy: string) => {
     if (!user) return;
-
-    // Unsubscribe from message listener BEFORE changing permissions
+    
+    // 1. Unsubscribe from the message listener to prevent a race condition.
     if (messageListenerRef.current) {
         messageListenerRef.current();
         messageListenerRef.current = null;
     }
     
-    // Unselect the room from the UI
+    // 2. Clear the selected room from the UI immediately.
     if (selectedRoom?.id === roomId) {
         setSelectedRoom(null);
     }
 
+    // 3. Perform the database operation.
     if (user.uid === createdBy) {
-      // Creator deletes the entire room
+      // Creator deletes the entire room.
       const roomRef = doc(firestore, 'collabRooms', roomId);
       await deleteDoc(roomRef); 
       toast({ title: 'Room Deleted', description: 'As the creator, you have deleted the room.' });
     } else {
-      // Member leaves the room
+      // Member leaves the room.
       const memberRef = doc(firestore, `collabRooms/${roomId}/members/${user.uid}`);
       await deleteDoc(memberRef);
       toast({ title: 'You Left the Room' });
