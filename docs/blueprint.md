@@ -20,3 +20,4 @@
 - Use consistent and minimalist icons for navigation and features.
 - Employ a glassmorphism design with frosted blur backgrounds and shadowed cards for a modern, layered look.
 - Subtle Framer Motion animations for smooth page transitions and hover effects.
+## V-1
