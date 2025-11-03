@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import PageTitle from '@/components/common/page-title';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,7 +20,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useUser, useFirestore, useMemoFirebase, useDoc, useCollection } from '@/firebase';
-import { collection, query, doc, deleteDoc, onSnapshot, addDoc, serverTimestamp, getDoc, orderBy, Timestamp, where, setDoc } from 'firebase/firestore';
+import { collection, query, doc, deleteDoc, onSnapshot, addDoc, serverTimestamp, getDoc, orderBy, Timestamp, where, setDoc, Unsubscribe } from 'firebase/firestore';
 import type { CollabRoom, CollabRoomMember, Message, User as UserType } from '@/lib/types';
 import {
   DropdownMenu,
@@ -100,6 +100,8 @@ export default function CollabSpace() {
   const [newRoomDescription, setNewRoomDescription] = useState('');
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
 
+  const messageListenerRef = useRef<Unsubscribe | null>(null);
+
   const userDocRef = useMemoFirebase(() => {
     if (!user) return null;
     return doc(firestore, 'users', user.uid);
@@ -116,9 +118,13 @@ export default function CollabSpace() {
         const userRooms: CollabRoom[] = [];
         for (const roomDoc of querySnapshot.docs) {
             const memberRef = doc(firestore, `collabRooms/${roomDoc.id}/members/${user.uid}`);
-            const memberSnap = await getDoc(memberRef);
-            if (memberSnap.exists()) {
-                userRooms.push({ id: roomDoc.id, ...roomDoc.data() } as CollabRoom);
+            try {
+                const memberSnap = await getDoc(memberRef);
+                if (memberSnap.exists()) {
+                    userRooms.push({ id: roomDoc.id, ...roomDoc.data() } as CollabRoom);
+                }
+            } catch (e) {
+                // Ignore permission errors for rooms we are not a member of
             }
         }
         setRooms(userRooms);
@@ -130,12 +136,20 @@ export default function CollabSpace() {
 
   // Fetch messages for selected room
   useEffect(() => {
+    // Clean up previous listener if it exists
+    if (messageListenerRef.current) {
+        messageListenerRef.current();
+        messageListenerRef.current = null;
+    }
+
     if (!selectedRoom?.id) {
       setMessages([]);
       return;
     }
+
     setMessagesLoading(true);
     const messagesQuery = query(collection(firestore, `collabRooms/${selectedRoom.id}/messages`), orderBy('timestamp', 'asc'));
+    
     const unsubscribe = onSnapshot(messagesQuery, (querySnapshot) => {
       const msgs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
       setMessages(msgs);
@@ -151,7 +165,15 @@ export default function CollabSpace() {
         }
         setMessagesLoading(false);
     });
-    return () => unsubscribe();
+
+    messageListenerRef.current = unsubscribe;
+
+    // Cleanup function for when the component unmounts or selectedRoom changes
+    return () => {
+        if (messageListenerRef.current) {
+            messageListenerRef.current();
+        }
+    };
   }, [selectedRoom, firestore]);
 
   const handleCreateRoom = async () => {
@@ -215,15 +237,24 @@ export default function CollabSpace() {
   const handleLeaveOrDeleteRoom = async (roomId: string, createdBy: string) => {
     if (!user) return;
 
+    // Unsubscribe from message listener BEFORE changing permissions
+    if (messageListenerRef.current) {
+        messageListenerRef.current();
+        messageListenerRef.current = null;
+    }
+    
+    // Unselect the room from the UI
     if (selectedRoom?.id === roomId) {
         setSelectedRoom(null);
     }
 
     if (user.uid === createdBy) {
+      // Creator deletes the entire room
       const roomRef = doc(firestore, 'collabRooms', roomId);
       await deleteDoc(roomRef); 
       toast({ title: 'Room Deleted', description: 'As the creator, you have deleted the room.' });
     } else {
+      // Member leaves the room
       const memberRef = doc(firestore, `collabRooms/${roomId}/members/${user.uid}`);
       await deleteDoc(memberRef);
       toast({ title: 'You Left the Room' });
