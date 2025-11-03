@@ -36,33 +36,25 @@ export default function CollabRoomPage() {
   
   useEffect(() => {
     // Only perform the check once both the user and room data have finished loading.
-    if (!isUserLoading && !isRoomLoading && room) {
-        if (!user || !room.members.includes(user.uid)) {
-            // If the user is not a member, redirect them.
-            router.push('/dashboard/collab');
-        }
-    } else if (!isUserLoading && !isRoomLoading && !room) {
+    if (!isUserLoading && !isRoomLoading) {
+      if (!room) {
         // If the room doesn't exist after loading, it's a 404
-        notFound();
+        return notFound();
+      }
+      if (!user || !room.members.includes(user.uid)) {
+          // If the user is not a member, redirect them.
+          router.push('/dashboard/collab');
+      }
     }
   }, [room, user, isRoomLoading, isUserLoading, router, notFound]);
 
 
-  if (isUserLoading || isRoomLoading) {
+  if (isUserLoading || isRoomLoading || !room || !user || !room.members.includes(user.uid)) {
     return (
         <div className="flex min-h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-gray-950 via-slate-900 to-purple-950">
             <p className="text-white">Loading Room...</p>
         </div>
     )
-  }
-  
-  // After loading, if user is not in the room (or no user), show a redirecting message while the useEffect kicks in.
-  if (!user || !room?.members.includes(user.uid)) {
-      return (
-        <div className="flex min-h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-gray-950 via-slate-900 to-purple-950">
-            <p className="text-white">Access Denied. Redirecting...</p>
-        </div>
-      );
   }
   
   const memberProfiles = room.members.map(id => ({ id, name: id.substring(0, 8) + '...', avatarUrl: `https://picsum.photos/seed/${id}/100/100` })) || [];
@@ -103,7 +95,7 @@ export default function CollabRoomPage() {
         <main className="flex-1 grid grid-cols-1 lg:grid-cols-[320px_1fr_320px] gap-6">
             
             {/* Left Sidebar */}
-            <div className="hidden lg:flex flex-col gap-6 h-full">
+            <div className="lg:flex flex-col gap-6 h-full">
                  <Card className="bg-card/50 backdrop-blur-sm border-border/50 flex-1 flex flex-col">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><UserIcon className="h-5 w-5" /> Members ({memberProfiles?.length || 0})</CardTitle>
