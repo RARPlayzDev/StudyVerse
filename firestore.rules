@@ -55,28 +55,15 @@ service cloud.firestore {
         return request.auth != null && resource.data.members.hasAny([request.auth.uid]);
       }
       
-      // Read: Anyone authed can read public rooms. Members can read private rooms they belong to.
-      allow get: if request.auth != null && (resource.data.type == 'public' || isMember());
-      allow list: if request.auth != null; // Allow listing to discover public rooms. Private ones are filtered on client.
+      allow get: if request.auth != null && isMember();
+      allow list: if request.auth != null; // Allow listing to discover rooms user is part of.
 
-      // Create: Admins can create public rooms. Any user can create a private room for themselves.
-      allow create: if request.auth != null && (
-        (request.resource.data.type == 'public' && isAdmin()) ||
-        (request.resource.data.type == 'private' && request.resource.data.createdBy == request.auth.uid && request.resource.data.members.hasAll([request.auth.uid]))
-      );
-
-      // Update: Room topic/description can be updated by creator. Members can be added.
-      // We allow any member to add others to a private room.
-      allow update: if request.auth != null && (
-        (resource.data.type == 'public' && isAdmin()) ||
-        (resource.data.type == 'private' && isMember())
-      );
-
-      // Delete: Admins can delete public rooms. The creator can delete a private room.
-      allow delete: if request.auth != null && (
-        (resource.data.type == 'public' && isAdmin()) ||
-        (resource.data.type == 'private' && resource.data.createdBy == request.auth.uid)
-      );
+      // Any authenticated user can create a private room
+      allow create: if request.auth != null && request.resource.data.type == 'private' && request.resource.data.createdBy == request.auth.uid;
+      
+      // Only a member can add other members. Creator can delete.
+      allow update: if request.auth != null && isMember();
+      allow delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
     }
 
     match /collabRooms/{roomId}/messages/{messageId} {

@@ -1,7 +1,7 @@
 'use client';
-import { notFound, useParams } from 'next/navigation';
+import { notFound, useParams, useRouter } from 'next/navigation';
 import { useDoc, useFirestore, useUser, useMemoFirebase, useCollection } from '@/firebase';
-import { doc, collection, addDoc, serverTimestamp, query, orderBy, Timestamp } from 'firebase/firestore';
+import { doc, collection, addDoc, serverTimestamp, query, orderBy, Timestamp, updateDoc, arrayRemove } from 'firebase/firestore';
 import type { CollabRoom, Message } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -9,22 +9,16 @@ import ChatInterface from '@/components/collab/chat-interface';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Button } from '@/components/ui/button';
-import { Phone, Video, Music2 } from 'lucide-react';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { useToast } from '@/hooks/use-toast';
+import { DoorOpen, Music2, User as UserIcon } from 'lucide-react';
 import Header from '@/components/dashboard/header';
 import StudentSidebar from '@/components/dashboard/sidebar';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function CollabRoomPage() {
   const { roomId } = useParams();
   const { user } = useUser();
   const firestore = useFirestore();
-  const { toast } = useToast();
+  const router = useRouter();
 
   const roomRef = useMemoFirebase(() => {
     if (!roomId) return null;
@@ -43,13 +37,29 @@ export default function CollabRoomPage() {
   const memberProfiles = room?.members.map(id => ({ id, name: id.substring(0, 8) + '...', avatarUrl: `https://picsum.photos/seed/${id}/100/100` })) || [];
 
   if (isRoomLoading) {
-    return <div className="flex items-center justify-center h-full"><p>Loading Room...</p></div>;
+    return (
+        <div className="flex min-h-screen w-full flex-col">
+            <StudentSidebar />
+            <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-16">
+                <Header />
+                <main className="flex-1 p-4 sm:px-6 sm:py-0 md:gap-8">
+                     <div className="h-[calc(100vh-8rem)] flex items-center justify-center"><p>Loading Room...</p></div>
+                </main>
+            </div>
+        </div>
+    )
   }
 
-  if (!room) {
+  if (!room && !isRoomLoading) {
     notFound();
   }
   
+  // Security check: if user is not in members array, redirect.
+  if (room && user && !room.members.includes(user.uid)) {
+      router.push('/dashboard/collab');
+      return <div className="flex items-center justify-center h-full"><p>Redirecting...</p></div>;
+  }
+
   const handleSendMessage = (text: string) => {
     if (!user || !roomId) return;
     
@@ -71,13 +81,14 @@ export default function CollabRoomPage() {
       errorEmitter.emit('permission-error', permissionError);
     });
   };
-
-  const showComingSoonToast = (feature: string) => {
-    toast({
-        title: `${feature} Coming Soon!`,
-        description: `Keep an eye out for ${feature.toLowerCase()} in a future update.`,
+  
+  const handleLeaveRoom = async () => {
+    if (!user || !roomRef) return;
+    await updateDoc(roomRef, {
+        members: arrayRemove(user.uid)
     });
-  };
+    router.push('/dashboard/collab');
+  }
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -85,96 +96,64 @@ export default function CollabRoomPage() {
       <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-16">
         <Header />
         <main className="flex-1 p-4 sm:px-6 sm:py-0 md:gap-8">
-            <TooltipProvider>
-            <div className="h-[calc(100vh-8rem)] flex flex-col">
-              <div className="grid grid-cols-1 lg:grid-cols-[250px_1fr_300px] gap-6 flex-1 h-full overflow-hidden">
+            <div className="h-[calc(100vh-8rem)] grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
                 
-                {/* Members Sidebar */}
-                <Card className="bg-card/50 backdrop-blur-sm border-border/50 h-full flex flex-col">
-                    <CardHeader>
-                        <CardTitle>Members ({memberProfiles?.length || 0})</CardTitle>
+                {/* Main Chat Panel */}
+                <Card className="flex-1 bg-card/50 backdrop-blur-sm border-border/50 h-full flex flex-col overflow-hidden">
+                    <CardHeader className="py-3 px-4 border-b border-border/50 flex-row items-center justify-between">
+                        <div>
+                            <CardTitle className="text-lg">{room?.topic}</CardTitle>
+                            <CardDescription>{room?.description}</CardDescription>
+                        </div>
+                         <Button variant="ghost" size="sm" onClick={handleLeaveRoom}>
+                            <DoorOpen className="mr-2 h-4 w-4" />
+                            Leave Room
+                        </Button>
                     </CardHeader>
-                    <CardContent className="space-y-4 overflow-y-auto flex-1">
-                       {memberProfiles?.map(member => (
-                           <div key={member.id} className="flex items-center gap-3">
-                               <Avatar className="h-8 w-8 relative">
-                                   <AvatarImage src={member.avatarUrl} data-ai-hint="person portrait"/>
-                                   <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
-                                   <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-card" />
-                               </Avatar>
-                               <span>{member.name}</span>
-                           </div>
-                       ))}
-                    </CardContent>
+                    <ChatInterface 
+                        messages={messages || []}
+                        onSendMessage={handleSendMessage}
+                        isLoading={areMessagesLoading}
+                    />
                 </Card>
 
-                {/* Main Chat Panel */}
-                <div className="lg:col-span-1 h-full">
-                    <Card className="flex-1 bg-card/50 backdrop-blur-sm border-border/50 h-full flex flex-col overflow-hidden">
-                        <CardHeader className="py-3 px-4 border-b border-border/50">
-                            <CardTitle className="text-lg">{room.topic}</CardTitle>
-                            <CardDescription>{room.description}</CardDescription>
-                        </CardHeader>
-                        <ChatInterface 
-                            messages={messages || []}
-                            onSendMessage={handleSendMessage}
-                            isLoading={areMessagesLoading}
-                        />
-                    </Card>
-                </div>
-
-                {/* Right Controls Panel */}
-                <div className="flex flex-col gap-6 h-full">
-                     <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                {/* Right Sidebar */}
+                <div className="hidden lg:flex flex-col gap-6 h-full">
+                     <Card className="bg-card/50 backdrop-blur-sm border-border/50 flex-1 flex flex-col">
                         <CardHeader>
-                            <CardTitle>Room Controls</CardTitle>
+                            <CardTitle className="flex items-center gap-2"><UserIcon className="h-5 w-5" /> Members ({memberProfiles?.length || 0})</CardTitle>
                         </CardHeader>
-                        <CardContent className="grid grid-cols-2 gap-4">
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button variant="outline" className="w-full" onClick={() => showComingSoonToast('Audio Call')}>
-                                        <Phone className="mr-2 h-4 w-4"/> Audio
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                   <p>Audio call rooms coming soon 🎧</p>
-                                </TooltipContent>
-                            </Tooltip>
-                             <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button variant="outline" className="w-full" onClick={() => showComingSoonToast('Video Call')}>
-                                        <Video className="mr-2 h-4 w-4"/> Video
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Video call rooms coming soon 🎥</p>
-                                </TooltipContent>
-                            </Tooltip>
+                        <CardContent className="space-y-4 overflow-y-auto flex-1">
+                           {isRoomLoading ? Array.from({length: 3}).map((_,i) => <Skeleton key={i} className="h-8 w-full" />) 
+                           : memberProfiles?.map(member => (
+                               <div key={member.id} className="flex items-center gap-3">
+                                   <Avatar className="h-8 w-8 relative">
+                                       <AvatarImage src={member.avatarUrl} data-ai-hint="person portrait"/>
+                                       <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                                       <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-card" />
+                                   </Avatar>
+                                   <span>{member.name}</span>
+                               </div>
+                           ))}
                         </CardContent>
                     </Card>
                     <Card className="bg-card/50 backdrop-blur-sm border-border/50">
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><Music2/> Group Music Player</CardTitle>
+                            <CardTitle className="flex items-center gap-2"><Music2/> Study Music</CardTitle>
                         </CardHeader>
                         <CardContent className="aspect-video">
                             <iframe
                                 className="w-full h-full rounded-md"
-                                src="https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&mute=1&loop=1"
+                                src="https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=0&mute=0&loop=1&controls=1"
                                 title="Lofi Music Player"
                                 frameBorder="0"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                 allowFullScreen
                             ></iframe>
-                             <div className="flex justify-center gap-2 mt-2">
-                                <p className="text-xs text-muted-foreground text-center">Spotify integration coming soon 🎵</p>
-                             </div>
                         </CardContent>
                     </Card>
                 </div>
-
               </div>
-            </div>
-            </TooltipProvider>
         </main>
       </div>
     </div>
