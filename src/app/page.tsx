@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -61,13 +62,13 @@ const testimonials = [
     {
         quote: "Being able to collaborate with my classmates in real-time study rooms has been invaluable, especially for tough subjects like calculus.",
         name: "Aasrith",
-        role: "Engineering Student",
+        role: "Computer Science Student",
         avatar: "https://picsum.photos/seed/testimonial2/100/100"
     },
     {
         quote: "The AI Mentor helps me break down complex topics and create study plans that actually work. It's like having a personal tutor 24/7.",
         name: "Krishna",
-        role: "Pre-Med Student",
+        role: "Computer Science Student",
         avatar: "https://picsum.photos/seed/testimonial3/100/100"
     }
 ]
