@@ -32,8 +32,8 @@ import {
 } from "@/components/ui/table"
 import PageTitle from "@/components/common/page-title"
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
-import { collection, query, orderBy, limit } from "firebase/firestore"
-import type { Task, Note as NoteType } from "@/lib/types"
+import { collection, query, orderBy, limit, where } from "firebase/firestore"
+import type { Task, Note as NoteType, CollabRoom } from "@/lib/types"
 
 export default function Dashboard() {
   const { user } = useUser();
@@ -43,19 +43,23 @@ export default function Dashboard() {
     if (!user) return null;
     return query(collection(firestore, 'users', user.uid, 'tasks'), orderBy('dueDate'), limit(3));
   }, [firestore, user]);
-
+  
   const notesQuery = useMemoFirebase(() => {
     if (!user) return null;
-    // This should ideally query a shared 'notes' collection, ordered by date
-    // For now, we query user-specific notes as a placeholder for the structure
-    return query(collection(firestore, 'users', user.uid, 'notes'), orderBy('date', 'desc'), limit(3));
+    return query(collection(firestore, 'notes'), orderBy('date', 'desc'), limit(3));
+  }, [firestore, user]);
+
+  const roomsQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(collection(firestore, 'collabRooms'), where('members', 'array-contains', user.uid));
   }, [firestore, user]);
 
   const { data: upcomingTasks, isLoading: tasksLoading } = useCollection<Task>(tasksQuery);
   const { data: recentNotes, isLoading: notesLoading } = useCollection<NoteType>(notesQuery);
+  const { data: activeRooms, isLoading: roomsLoading } = useCollection<CollabRoom>(roomsQuery);
 
   const upcomingTasksFiltered = upcomingTasks?.filter(t => t.status !== 'done');
-  const tasksDueCount = upcomingTasks?.filter(t => t.status !== 'done').length ?? 0;
+  const tasksDueCount = upcomingTasksFiltered?.length ?? 0;
   const tasksCompletedCount = upcomingTasks?.filter(t => t.status === 'done').length ?? 0;
 
   return (
@@ -108,9 +112,9 @@ export default function Dashboard() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">
-              Join a study room
+            <div className="text-2xl font-bold">{activeRooms?.length ?? 0}</div>
+             <p className="text-xs text-muted-foreground">
+              <Link href="/dashboard/collab" className="hover:underline">Join a study room</Link>
             </p>
           </CardContent>
         </Card>
