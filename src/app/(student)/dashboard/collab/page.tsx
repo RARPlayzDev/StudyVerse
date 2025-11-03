@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo, useEffect } from 'react';
 import PageTitle from '@/components/common/page-title';
@@ -18,8 +19,8 @@ import {
   Music2,
   DoorOpen
 } from 'lucide-react';
-import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, doc, deleteDoc, onSnapshot, addDoc, serverTimestamp, getDoc, orderBy, Timestamp, setDoc } from 'firebase/firestore';
+import { useUser, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import { collection, query, doc, deleteDoc, onSnapshot, addDoc, serverTimestamp, getDoc, orderBy, Timestamp, setDoc, where } from 'firebase/firestore';
 import type { CollabRoom, CollabRoomMember, Message, User as UserType } from '@/lib/types';
 import {
   DropdownMenu,
@@ -133,15 +134,17 @@ export default function CollabSpace() {
       setMessagesLoading(false);
     }, (error) => {
         console.error("Error fetching messages:", error);
-        const permissionError = new FirestorePermissionError({
-            path: `collabRooms/${selectedRoom.id}/messages`,
-            operation: 'list',
-        });
-        errorEmitter.emit('permission-error', permissionError);
+        if (selectedRoom) {
+            const permissionError = new FirestorePermissionError({
+                path: `collabRooms/${selectedRoom.id}/messages`,
+                operation: 'list',
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        }
         setMessagesLoading(false);
     });
     return () => unsubscribe();
-  }, [selectedRoom?.id, firestore]);
+  }, [selectedRoom, firestore]);
 
   const handleCreateRoom = async () => {
     if (!user) return;
@@ -389,3 +392,5 @@ export default function CollabSpace() {
     </div>
   );
 };
+
+    
