@@ -58,7 +58,7 @@ export default function CollabRoomPage() {
         senderName: user.displayName || user.email || 'Anonymous',
         senderAvatar: user.photoURL || `https://picsum.photos/seed/${user.uid}/100/100`,
         text: text,
-        timestamp: serverTimestamp(),
+        timestamp: serverTimestamp() as Timestamp,
     };
 
     addDoc(messagesColRef, newMessage).catch((err) => {
