@@ -7,7 +7,6 @@ import {
   LogOut,
   NotebookText,
   Settings,
-  User,
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -32,8 +31,6 @@ const mainNavItems = [
   { href: '/dashboard/mentor', icon: BrainCircuit, label: 'AI Mentor' },
   { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
 ];
-
-const bottomNavItems: { href: string; icon: React.ElementType; label: string }[] = [];
 
 export default function StudentSidebar() {
   const pathname = usePathname();
@@ -77,24 +74,21 @@ export default function StudentSidebar() {
           {mainNavItems.map(renderNavItem)}
         </nav>
         <div className="mt-auto flex flex-col items-center gap-4 px-2 py-4">
-          <nav className="flex flex-col items-center gap-4">
-            {bottomNavItems.map(renderNavItem)}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={handleLogout}
-                  className={cn(
-                    'flex h-10 w-10 items-center justify-center rounded-lg transition-colors md:h-9 md:w-9',
-                    'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  <LogOut className="h-5 w-5" />
-                  <span className="sr-only">Logout</span>
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Logout</TooltipContent>
-            </Tooltip>
-          </nav>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={handleLogout}
+                className={cn(
+                  'flex h-10 w-10 items-center justify-center rounded-lg transition-colors md:h-9 md:w-9',
+                  'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <LogOut className="h-5 w-5" />
+                <span className="sr-only">Logout</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Logout</TooltipContent>
+          </Tooltip>
         </div>
       </TooltipProvider>
     </aside>
