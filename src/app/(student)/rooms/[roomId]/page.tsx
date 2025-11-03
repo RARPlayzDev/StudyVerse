@@ -10,8 +10,6 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Button } from '@/components/ui/button';
 import { DoorOpen, Music2, User as UserIcon } from 'lucide-react';
-import Header from '@/components/dashboard/header';
-import StudentSidebar from '@/components/dashboard/sidebar';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function CollabRoomPage() {
@@ -38,14 +36,8 @@ export default function CollabRoomPage() {
 
   if (isRoomLoading) {
     return (
-        <div className="flex min-h-screen w-full flex-col">
-            <StudentSidebar />
-            <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-16">
-                <Header />
-                <main className="flex-1 p-4 sm:px-6 sm:py-0 md:gap-8">
-                     <div className="h-[calc(100vh-8rem)] flex items-center justify-center"><p>Loading Room...</p></div>
-                </main>
-            </div>
+        <div className="flex min-h-screen w-full flex-col items-center justify-center">
+            <p>Loading Room...</p>
         </div>
     )
   }
@@ -91,71 +83,65 @@ export default function CollabRoomPage() {
   }
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
-      <StudentSidebar />
-      <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-16">
-        <Header />
-        <main className="flex-1 p-4 sm:px-6 sm:py-0 md:gap-8">
-            <div className="h-[calc(100vh-8rem)] grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-                
-                {/* Main Chat Panel */}
-                <Card className="flex-1 bg-card/50 backdrop-blur-sm border-border/50 h-full flex flex-col overflow-hidden">
-                    <CardHeader className="py-3 px-4 border-b border-border/50 flex-row items-center justify-between">
-                        <div>
-                            <CardTitle className="text-lg">{room?.topic}</CardTitle>
-                            <CardDescription>{room?.description}</CardDescription>
-                        </div>
-                         <Button variant="ghost" size="sm" onClick={handleLeaveRoom}>
-                            <DoorOpen className="mr-2 h-4 w-4" />
-                            Leave Room
-                        </Button>
-                    </CardHeader>
-                    <ChatInterface 
-                        messages={messages || []}
-                        onSendMessage={handleSendMessage}
-                        isLoading={areMessagesLoading}
-                    />
-                </Card>
+    <div className="min-h-screen w-full flex flex-col p-4 sm:p-6 bg-gradient-to-br from-gray-950 via-slate-900 to-purple-950">
+        <main className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+            
+            {/* Main Chat Panel */}
+            <Card className="flex-1 bg-card/50 backdrop-blur-sm border-border/50 h-full flex flex-col overflow-hidden">
+                <CardHeader className="py-3 px-4 border-b border-border/50 flex-row items-center justify-between">
+                    <div>
+                        <CardTitle className="text-lg">{room?.topic}</CardTitle>
+                        <CardDescription>{room?.description}</CardDescription>
+                    </div>
+                     <Button variant="ghost" size="sm" onClick={handleLeaveRoom}>
+                        <DoorOpen className="mr-2 h-4 w-4" />
+                        Leave Room
+                    </Button>
+                </CardHeader>
+                <ChatInterface 
+                    messages={messages || []}
+                    onSendMessage={handleSendMessage}
+                    isLoading={areMessagesLoading}
+                />
+            </Card>
 
-                {/* Right Sidebar */}
-                <div className="hidden lg:flex flex-col gap-6 h-full">
-                     <Card className="bg-card/50 backdrop-blur-sm border-border/50 flex-1 flex flex-col">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><UserIcon className="h-5 w-5" /> Members ({memberProfiles?.length || 0})</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4 overflow-y-auto flex-1">
-                           {isRoomLoading ? Array.from({length: 3}).map((_,i) => <Skeleton key={i} className="h-8 w-full" />) 
-                           : memberProfiles?.map(member => (
-                               <div key={member.id} className="flex items-center gap-3">
-                                   <Avatar className="h-8 w-8 relative">
-                                       <AvatarImage src={member.avatarUrl} data-ai-hint="person portrait"/>
-                                       <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
-                                       <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-card" />
-                                   </Avatar>
-                                   <span>{member.name}</span>
-                               </div>
-                           ))}
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><Music2/> Study Music</CardTitle>
-                        </CardHeader>
-                        <CardContent className="aspect-video">
-                            <iframe
-                                className="w-full h-full rounded-md"
-                                src="https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=0&mute=0&loop=1&controls=1"
-                                title="Lofi Music Player"
-                                frameBorder="0"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                allowFullScreen
-                            ></iframe>
-                        </CardContent>
-                    </Card>
-                </div>
-              </div>
-        </main>
-      </div>
+            {/* Right Sidebar */}
+            <div className="hidden lg:flex flex-col gap-6 h-full">
+                 <Card className="bg-card/50 backdrop-blur-sm border-border/50 flex-1 flex flex-col">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><UserIcon className="h-5 w-5" /> Members ({memberProfiles?.length || 0})</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4 overflow-y-auto flex-1">
+                       {isRoomLoading ? Array.from({length: 3}).map((_,i) => <Skeleton key={i} className="h-8 w-full" />) 
+                       : memberProfiles?.map(member => (
+                           <div key={member.id} className="flex items-center gap-3">
+                               <Avatar className="h-8 w-8 relative">
+                                   <AvatarImage src={member.avatarUrl} data-ai-hint="person portrait"/>
+                                   <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                                   <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-card" />
+                               </Avatar>
+                               <span>{member.name}</span>
+                           </div>
+                       ))}
+                    </CardContent>
+                </Card>
+                <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Music2/> Study Music</CardTitle>
+                    </CardHeader>
+                    <CardContent className="aspect-video">
+                        <iframe
+                            className="w-full h-full rounded-md"
+                            src="https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=0&mute=0&loop=1&controls=1"
+                            title="Lofi Music Player"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowFullScreen
+                        ></iframe>
+                    </CardContent>
+                </Card>
+            </div>
+          </main>
     </div>
   );
 }
