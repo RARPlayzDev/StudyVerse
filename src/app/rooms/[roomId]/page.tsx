@@ -11,6 +11,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { Button } from '@/components/ui/button';
 import { DoorOpen, Music2, User as UserIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useEffect } from 'react';
 
 export default function CollabRoomPage() {
   const { roomId } = useParams();
@@ -33,6 +34,14 @@ export default function CollabRoomPage() {
   const { data: messages, isLoading: areMessagesLoading } = useCollection<Message>(messagesQuery);
   
   const memberProfiles = room?.members.map(id => ({ id, name: id.substring(0, 8) + '...', avatarUrl: `https://picsum.photos/seed/${id}/100/100` })) || [];
+  
+  useEffect(() => {
+    // Security check: if room data has loaded and user is not in members array, redirect.
+    if (!isRoomLoading && room && user && !room.members.includes(user.uid)) {
+      router.push('/dashboard/collab');
+    }
+  }, [room, user, isRoomLoading, router]);
+
 
   if (isRoomLoading) {
     return (
@@ -46,10 +55,9 @@ export default function CollabRoomPage() {
     notFound();
   }
   
-  // Security check: if user is not in members array, redirect.
+  // This check is now safe because we've handled the loading and not-found states above.
   if (room && user && !room.members.includes(user.uid)) {
-      router.push('/dashboard/collab');
-      return <div className="flex items-center justify-center h-full"><p>Redirecting...</p></div>;
+      return <div className="flex items-center justify-center h-screen w-full"><p>Redirecting...</p></div>;
   }
 
   const handleSendMessage = (text: string) => {
