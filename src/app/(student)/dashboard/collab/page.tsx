@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import PageTitle from '@/components/common/page-title';
@@ -20,7 +21,7 @@ import {
 import CreateCollabRoomDialog from '@/components/collab/create-collab-room-dialog';
 import JoinCollabRoomDialog from '@/components/collab/join-collab-room-dialog';
 import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, doc, deleteDoc, updateDoc, arrayRemove, getDocs } from 'firebase/firestore';
+import { collection, query, where, doc, deleteDoc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import type { CollabRoom } from '@/lib/types';
 import Link from 'next/link';
@@ -131,7 +132,7 @@ export default function CollabPage() {
                                   <Button variant="secondary" size="sm" className="w-full" onClick={() => handleCopyCode(room.inviteCode)}>
                                     <Copy className="h-4 w-4 mr-2" /> Copy Code
                                   </Button>
-                                 {user && user.uid === room.createdBy && (
+                                 {/* TEMPORARILY VISIBLE FOR CLEANUP */}
                                   <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                       <Button variant="destructive" size="sm" className="w-auto">
@@ -153,7 +154,6 @@ export default function CollabPage() {
                                       </AlertDialogFooter>
                                     </AlertDialogContent>
                                   </AlertDialog>
-                                )}
                                 </div>
                             </div>
                         </CardContent>
