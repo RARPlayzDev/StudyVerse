@@ -12,14 +12,12 @@ import {
 } from '@/components/ui/card';
 import {
   Plus,
-  ArrowRight,
-  Trash2,
   Copy,
   Users,
   Music2,
   DoorOpen
 } from 'lucide-react';
-import { useUser, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc } from '@/firebase';
 import { collection, query, doc, deleteDoc, onSnapshot, addDoc, serverTimestamp, getDoc, orderBy, Timestamp, setDoc, where } from 'firebase/firestore';
 import type { CollabRoom, CollabRoomMember, Message, User as UserType } from '@/lib/types';
 import {
@@ -99,6 +97,13 @@ export default function CollabSpace() {
   const [newRoomDescription, setNewRoomDescription] = useState('');
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
 
+  const userDocRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
+  const { data: userData } = useDoc<UserType>(userDocRef);
+
   // Fetch rooms user is a member of
   useEffect(() => {
     if (!user) return;
@@ -169,7 +174,8 @@ export default function CollabSpace() {
         await setDoc(memberRef, { userId: user.uid, joinedAt: serverTimestamp() });
         
         toast({ title: "Room created successfully!", description: `Invite code: ${newRoomData.inviteCode}`});
-        setSelectedRoom({ id: roomDocRef.id, ...newRoomData, createdAt: new Date() } as CollabRoom);
+        const createdRoom = { id: roomDocRef.id, ...newRoomData, createdAt: new Date() } as CollabRoom;
+        setSelectedRoom(createdRoom);
         setShowCreateRoom(false);
         setNewRoomTopic('');
         setNewRoomDescription('');
@@ -186,7 +192,7 @@ export default function CollabSpace() {
 
     const newMessage: Omit<Message, 'id' | 'timestamp'> & { timestamp: any } = {
         senderId: user.uid,
-        senderName: user.displayName || 'Anonymous',
+        senderName: userData?.name || user.displayName || 'User',
         senderAvatar: user.photoURL || '',
         text: text,
         timestamp: serverTimestamp(),
@@ -392,5 +398,3 @@ export default function CollabSpace() {
     </div>
   );
 };
-
-    
