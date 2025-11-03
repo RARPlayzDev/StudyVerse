@@ -97,7 +97,7 @@ export default function CollabRoomPage() {
         <main className="flex-1 grid grid-cols-1 lg:grid-cols-[320px_1fr_320px] gap-6">
             
             {/* Left Sidebar */}
-            <div className="flex-col gap-6 h-full lg:flex">
+            <div className="lg:flex flex-col gap-6 h-full">
                  <Card className="bg-card/50 backdrop-blur-sm border-border/50 flex-1 flex flex-col">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><UserIcon className="h-5 w-5" /> Members ({room.members.length})</CardTitle>
