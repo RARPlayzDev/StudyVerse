@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import PageTitle from '@/components/common/page-title';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,7 +23,7 @@ import {
   DoorOpen
 } from 'lucide-react';
 import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, doc, deleteDoc, getDocs, onSnapshot, addDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { collection, query, where, doc, deleteDoc, getDocs, onSnapshot, addDoc, serverTimestamp, getDoc, orderBy, Timestamp, setDoc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import type { CollabRoom, CollabRoomMember, Message, User as UserType } from '@/lib/types';
 import Link from 'next/link';
@@ -45,6 +45,7 @@ import { Textarea } from '@/components/ui/textarea';
 import ChatInterface from '@/components/collab/chat-interface';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import React, { useEffect } from 'react';
 
 const generateInviteCode = () => {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -143,6 +144,14 @@ export default function CollabSpace() {
       const msgs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
       setMessages(msgs);
       setMessagesLoading(false);
+    }, (error) => {
+        console.error("Error fetching messages:", error);
+        const permissionError = new FirestorePermissionError({
+            path: `collabRooms/${selectedRoom.id}/messages`,
+            operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        setMessagesLoading(false);
     });
     return () => unsubscribe();
   }, [selectedRoom, firestore]);
@@ -170,7 +179,7 @@ export default function CollabSpace() {
         await setDoc(memberRef, { userId: user.uid, joinedAt: serverTimestamp() });
         
         toast({ title: "Room created successfully!", description: `Invite code: ${newRoomData.inviteCode}`});
-        setSelectedRoom({ id: roomDocRef.id, ...newRoomData });
+        setSelectedRoom({ id: roomDocRef.id, ...newRoomData, createdAt: new Date() });
         setShowCreateRoom(false);
         setNewRoomTopic('');
         setNewRoomDescription('');
@@ -185,12 +194,12 @@ export default function CollabSpace() {
   const handleSendMessage = async (text: string) => {
     if (!text.trim() || !selectedRoom || !user) return;
 
-    const newMessage: Omit<Message, 'id'> = {
+    const newMessage: Omit<Message, 'id' | 'timestamp'> & { timestamp: any } = {
         senderId: user.uid,
         senderName: user.displayName || 'Anonymous',
         senderAvatar: user.photoURL || '',
         text: text,
-        timestamp: serverTimestamp() as Timestamp,
+        timestamp: serverTimestamp(),
         roomId: selectedRoom.id,
     };
     const messagesColRef = collection(firestore, `collabRooms/${selectedRoom.id}/messages`);
