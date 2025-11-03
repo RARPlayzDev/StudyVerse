@@ -1,3 +1,4 @@
+'use client';
 import PageTitle from "@/components/common/page-title";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { adminContentStats, adminEngagementStats, adminUserStats, placeholderUsers, weeklyFocusData } from "@/lib/placeholder-data";
