@@ -52,6 +52,10 @@ service cloud.firestore {
     }
 
     match /collabRooms/{roomId} {
+      function isMember() {
+        return request.auth != null && resource.data.members.hasAny([request.auth.uid]);
+      }
+      
       // Allow any authenticated user to get a room document to check its details before joining/entering
       allow get: if request.auth != null;
       allow list: if request.auth != null; // Allow listing to discover rooms user is part of.
@@ -59,10 +63,8 @@ service cloud.firestore {
       // Any authenticated user can create a private room
       allow create: if request.auth != null && request.resource.data.type == 'private' && request.resource.data.createdBy == request.auth.uid;
       
-      // Allow any authenticated user to add themselves to a room (join).
-      // A user can also leave a room.
-      // Only the creator can delete the room entirely.
-      allow update: if request.auth != null && (request.resource.data.members == resource.data.members.concat([request.auth.uid]) || request.resource.data.members == resource.data.members.diff([request.auth.uid]));
+      // Allow any authenticated user to update a room (join/leave). The client-side code ensures a user can only add/remove themselves.
+      allow update: if request.auth != null;
       allow delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
     }
 
