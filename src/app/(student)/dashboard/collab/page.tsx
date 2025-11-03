@@ -1,6 +1,6 @@
 
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PageTitle from '@/components/common/page-title';
 import { Button } from '@/components/ui/button';
 import {
@@ -271,5 +271,3 @@ export default function CollabPage() {
     </div>
   );
 }
-
-    
