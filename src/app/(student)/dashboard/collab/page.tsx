@@ -15,10 +15,12 @@ import {
   Copy,
   Users,
   Music2,
-  DoorOpen
+  DoorOpen,
+  ChevronLeft,
+  Sparkles,
 } from 'lucide-react';
-import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc } from '@/firebase';
-import { collection, query, doc, deleteDoc, onSnapshot, addDoc, serverTimestamp, getDoc, orderBy, Timestamp, setDoc, where } from 'firebase/firestore';
+import { useUser, useFirestore, useMemoFirebase, useDoc, useCollection } from '@/firebase';
+import { collection, query, doc, deleteDoc, onSnapshot, addDoc, serverTimestamp, getDoc, orderBy, Timestamp, where } from 'firebase/firestore';
 import type { CollabRoom, CollabRoomMember, Message, User as UserType } from '@/lib/types';
 import {
   DropdownMenu,
@@ -245,7 +247,7 @@ export default function CollabSpace() {
     <div className="flex h-[calc(100vh-8rem)] bg-gradient-to-br from-slate-900 to-purple-950 -m-4 sm:-m-6">
       <div className="flex-1 flex overflow-hidden">
         {/* Rooms List */}
-        <div className="w-80 border-r border-purple-500/20 glass-card p-6 overflow-y-auto">
+        <div className="w-80 border-r border-purple-500/20 glass-card p-6 flex flex-col">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-white">Study Rooms</h2>
              <DropdownMenu>
@@ -304,7 +306,7 @@ export default function CollabSpace() {
 
           <JoinCollabRoomDialog open={showJoinRoom} onOpenChange={setShowJoinRoom} />
 
-          <div className="space-y-3">
+          <div className="space-y-3 overflow-y-auto flex-1">
             {roomsLoading && <p className="text-muted-foreground">Loading rooms...</p>}
             {rooms.map((room, index) => (
               <motion.div
@@ -332,6 +334,13 @@ export default function CollabSpace() {
             ))}
             {!roomsLoading && rooms.length === 0 && <p className="text-muted-foreground text-sm">You haven't joined any rooms yet.</p>}
           </div>
+            <div className="mt-auto pt-4">
+                <Card className="bg-card/50 backdrop-blur-sm border-border/50 text-center">
+                    <CardContent className="p-3">
+                        <p className="text-xs text-muted-foreground">More features coming soon!</p>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
 
         {/* Chat Area */}
@@ -339,9 +348,14 @@ export default function CollabSpace() {
           {selectedRoom ? (
             <>
               <div className="mb-6 flex justify-between items-start">
-                  <div>
-                    <h2 className="text-3xl font-bold text-white">{selectedRoom.topic}</h2>
-                    <p className="text-gray-400">{selectedRoom.description}</p>
+                  <div className="flex items-center gap-2">
+                     <Button variant="ghost" size="icon" onClick={() => setSelectedRoom(null)} className="h-9 w-9">
+                        <ChevronLeft className="h-6 w-6" />
+                    </Button>
+                    <div>
+                        <h2 className="text-3xl font-bold text-white">{selectedRoom.topic}</h2>
+                        <p className="text-gray-400">{selectedRoom.description}</p>
+                    </div>
                   </div>
                    <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm" onClick={() => handleCopyCode(selectedRoom.inviteCode)}>
