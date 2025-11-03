@@ -64,7 +64,7 @@ export default function CollabRoomPage() {
     if (!user || !roomId) return;
     
     const messagesColRef = collection(firestore, `collabRooms/${roomId}/messages`);
-    const newMessage = {
+    const newMessage: Omit<Message, 'id'> = {
         senderId: user.uid,
         senderName: user.displayName || user.email || 'Anonymous',
         senderAvatar: user.photoURL || `https://picsum.photos/seed/${user.uid}/100/100`,

@@ -55,7 +55,6 @@ export default function CollabPage() {
 
   const handleDeleteRoom = async (roomId: string) => {
     try {
-      // NOTE: This only deletes the room doc. A Cloud Function would be needed to delete the subcollection.
       await deleteDoc(doc(firestore, "collabRooms", roomId));
       toast({
         title: "Room Deleted",
