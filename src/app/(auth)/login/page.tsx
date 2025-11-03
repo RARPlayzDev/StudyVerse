@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -10,7 +11,7 @@ import Logo from "@/components/common/logo";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
-import { initiateEmailSignIn } from "@/firebase/non-blocking-login";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { signInWithGoogle } from "@/firebase/auth/google-signin";
 import { doc } from "firebase/firestore";
 
@@ -42,11 +43,34 @@ export default function LoginPage() {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    initiateEmailSignIn(auth, email, password);
-    toast({
-      title: "Logging In...",
-      description: "Please wait while we check your credentials.",
-    });
+    signInWithEmailAndPassword(auth, email, password)
+      .then(() => {
+        toast({
+          title: "Login Successful",
+          description: "Welcome back! Redirecting you now...",
+        });
+        // The useEffect will handle the redirect.
+      })
+      .catch((error) => {
+        let description = "An unexpected error occurred. Please try again.";
+        switch (error.code) {
+          case 'auth/user-not-found':
+          case 'auth/wrong-password':
+          case 'auth/invalid-credential':
+            description = "Invalid credentials. Please check your email and password.";
+            break;
+          case 'auth/invalid-email':
+            description = "The email address is not valid.";
+            break;
+          default:
+            description = error.message;
+        }
+        toast({
+          title: "Login Failed",
+          description: description,
+          variant: "destructive",
+        });
+      });
   };
 
   const handleGoogleSignIn = () => {
