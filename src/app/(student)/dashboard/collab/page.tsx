@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import PageTitle from '@/components/common/page-title';
@@ -38,6 +37,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import JoinCollabRoomDialog from '@/components/collab/join-collab-room-dialog';
 import { Badge } from '@/components/ui/badge';
+import LeaveRoomDialog from '@/components/collab/leave-room-dialog';
 
 const generateInviteCode = () => {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -56,6 +56,7 @@ function MemberList({ roomId }: { roomId: string }) {
 
     const usersQuery = useMemoFirebase(() => {
         if (!firestore || memberIds.length === 0) return null;
+        // Firestore 'in' queries are limited to 10 items. For a real app, pagination would be needed here.
         return query(collection(firestore, 'users'), where('id', 'in', memberIds.slice(0, 10)));
     }, [firestore, memberIds]);
 
@@ -99,6 +100,9 @@ export default function CollabSpace() {
   const [newRoomTopic, setNewRoomTopic] = useState('');
   const [newRoomDescription, setNewRoomDescription] = useState('');
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+  const [roomToLeave, setRoomToLeave] = useState<CollabRoom | null>(null);
+
 
   const messageListenerRef = useRef<Unsubscribe | null>(null);
 
@@ -129,6 +133,9 @@ export default function CollabSpace() {
         });
         await Promise.all(promises);
         setRooms(userRooms);
+        setRoomsLoading(false);
+    }, (error) => {
+        console.error("Error fetching rooms list:", error);
         setRoomsLoading(false);
     });
 
@@ -235,32 +242,36 @@ export default function CollabSpace() {
     });
   };
 
-  const handleLeaveOrDeleteRoom = async (roomId: string, createdBy: string) => {
+  const handleConfirmLeave = async (room: CollabRoom) => {
     if (!user) return;
     
-    // 1. Unsubscribe from the message listener to prevent a race condition.
+    // Stop listening for messages
     if (messageListenerRef.current) {
         messageListenerRef.current();
         messageListenerRef.current = null;
     }
-    
-    // 2. Clear the selected room from the UI immediately.
-    if (selectedRoom?.id === roomId) {
+
+    // Update UI immediately
+    if (selectedRoom?.id === room.id) {
         setSelectedRoom(null);
     }
 
-    // 3. Perform the database operation.
-    if (user.uid === createdBy) {
+    if (user.uid === room.createdBy) {
       // Creator deletes the entire room.
-      const roomRef = doc(firestore, 'collabRooms', roomId);
+      const roomRef = doc(firestore, 'collabRooms', room.id);
       await deleteDoc(roomRef); 
       toast({ title: 'Room Deleted', description: 'As the creator, you have deleted the room.' });
     } else {
       // Member leaves the room.
-      const memberRef = doc(firestore, `collabRooms/${roomId}/members/${user.uid}`);
+      const memberRef = doc(firestore, `collabRooms/${room.id}/members/${user.uid}`);
       await deleteDoc(memberRef);
       toast({ title: 'You Left the Room' });
     }
+
+    // Manually filter out the room from the local state to ensure UI updates.
+    setRooms(prevRooms => prevRooms.filter(r => r.id !== room.id));
+    setShowLeaveDialog(false);
+    setRoomToLeave(null);
   };
 
   const handleCopyCode = (code: string | undefined) => {
@@ -271,6 +282,11 @@ export default function CollabSpace() {
       description: "You can now share it with others.",
     });
   };
+
+  const openLeaveDialog = (room: CollabRoom) => {
+    setRoomToLeave(room);
+    setShowLeaveDialog(true);
+  }
 
 
   return (
@@ -338,6 +354,15 @@ export default function CollabSpace() {
           )}
 
           <JoinCollabRoomDialog open={showJoinRoom} onOpenChange={setShowJoinRoom} />
+          {roomToLeave && (
+            <LeaveRoomDialog 
+                open={showLeaveDialog}
+                onOpenChange={setShowLeaveDialog}
+                roomName={roomToLeave.topic}
+                isCreator={user?.uid === roomToLeave.createdBy}
+                onConfirm={() => handleConfirmLeave(roomToLeave)}
+            />
+          )}
 
           <div className="space-y-3 overflow-y-auto flex-1">
             {roomsLoading && <p className="text-muted-foreground">Loading rooms...</p>}
@@ -395,7 +420,7 @@ export default function CollabSpace() {
                             <Copy className="mr-2 h-4 w-4" />
                             Copy Invite Code
                         </Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleLeaveOrDeleteRoom(selectedRoom.id, selectedRoom.createdBy)}>
+                        <Button variant="destructive" size="sm" onClick={() => openLeaveDialog(selectedRoom)}>
                             <DoorOpen className="mr-2 h-4 w-4" />
                             {user?.uid === selectedRoom.createdBy ? 'Delete Room' : 'Leave Room'}
                         </Button>
