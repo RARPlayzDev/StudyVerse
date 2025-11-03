@@ -106,7 +106,7 @@ export default function CollabPage() {
                                 </CardHeader>
                                 <CardContent>
                                 <Button asChild>
-                                    <Link href={`/dashboard/rooms/${room.id}`}>
+                                    <Link href={`/rooms/${room.id}`}>
                                         Enter Room <ArrowRight className="ml-2 h-4 w-4" />
                                     </Link>
                                 </Button>
