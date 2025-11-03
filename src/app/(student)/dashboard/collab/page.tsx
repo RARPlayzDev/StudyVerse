@@ -255,6 +255,9 @@ export default function CollabSpace() {
     if (selectedRoom?.id === room.id) {
         setSelectedRoom(null);
     }
+    
+    // Manually filter out the room from the local state to ensure UI updates.
+    setRooms(prevRooms => prevRooms.filter(r => r.id !== room.id));
 
     if (user.uid === room.createdBy) {
       // Creator deletes the entire room.
@@ -268,8 +271,6 @@ export default function CollabSpace() {
       toast({ title: 'You Left the Room' });
     }
 
-    // Manually filter out the room from the local state to ensure UI updates.
-    setRooms(prevRooms => prevRooms.filter(r => r.id !== room.id));
     setShowLeaveDialog(false);
     setRoomToLeave(null);
   };

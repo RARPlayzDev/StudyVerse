@@ -27,16 +27,17 @@ export default function LeaveRoomDialog({
   onConfirm,
 }: LeaveRoomDialogProps) {
   const [countdown, setCountdown] = useState(10);
+  const [isConfirming, setIsConfirming] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (open) {
+      setIsConfirming(false);
       setCountdown(10);
       timerRef.current = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
             clearInterval(timerRef.current!);
-            onConfirm();
             return 0;
           }
           return prev - 1;
@@ -53,7 +54,12 @@ export default function LeaveRoomDialog({
         clearInterval(timerRef.current);
       }
     };
-  }, [open, onConfirm]);
+  }, [open]);
+
+  const handleConfirm = () => {
+    setIsConfirming(true);
+    onConfirm();
+  };
 
   const handleCancel = () => {
     onOpenChange(false);
@@ -74,7 +80,7 @@ export default function LeaveRoomDialog({
         </DialogHeader>
         <div className="py-4 text-center">
           <p className="text-sm text-muted-foreground">
-            This will happen automatically in...
+            This action will be confirmed in...
           </p>
           <p className="text-6xl font-bold text-destructive">{countdown}</p>
         </div>
@@ -83,16 +89,17 @@ export default function LeaveRoomDialog({
             type="button"
             variant="secondary"
             onClick={handleCancel}
+            disabled={isConfirming}
           >
             Cancel
           </Button>
           <Button
             type="button"
             variant="destructive"
-            onClick={onConfirm}
-            disabled={countdown > 0}
+            onClick={handleConfirm}
+            disabled={countdown > 0 || isConfirming}
           >
-            {countdown > 0 ? (
+            {isConfirming ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : null}
             Confirm {isCreator ? 'Deletion' : 'Leave'}
