@@ -62,6 +62,7 @@ export default function CollabRoomPage() {
         senderAvatar: user.photoURL || `https://picsum.photos/seed/${user.uid}/100/100`,
         text: text,
         timestamp: serverTimestamp() as Timestamp,
+        roomId: roomId as string,
     };
 
     addDoc(messagesColRef, newMessage).catch((err) => {
@@ -100,7 +101,7 @@ export default function CollabRoomPage() {
                 </CardHeader>
                 <ChatInterface 
                     messages={messages || []}
-                    onSendMessage={handleSendMessage}
+                    onSendMessage={handleSendMessage} 
                     isLoading={areMessagesLoading}
                 />
             </Card>
