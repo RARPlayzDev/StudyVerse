@@ -107,10 +107,8 @@ export default function JoinCollabRoomDialog({
       const roomData = roomDoc.data() as CollabRoom;
       const roomId = roomDoc.id;
       
-      // Path to the members subcollection document
       const memberRef = doc(firestore, 'collabRooms', roomId, 'members', user.uid);
 
-      // Check if user is already a member
       const memberDoc = await getDoc(memberRef);
       if (memberDoc.exists()) {
         toast({
@@ -123,7 +121,6 @@ export default function JoinCollabRoomDialog({
         return;
       }
 
-      // Add user to the members subcollection by creating a document with their UID
       const memberData = {
         userId: user.uid,
         joinedAt: serverTimestamp(),
@@ -217,5 +214,3 @@ export default function JoinCollabRoomDialog({
     </Dialog>
   );
 }
-
-    

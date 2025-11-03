@@ -1,6 +1,5 @@
-
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import PageTitle from '@/components/common/page-title';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,31 +11,22 @@ import {
 } from '@/components/ui/card';
 import {
   Plus,
-  LogIn,
   ArrowRight,
   Trash2,
   Copy,
   Users,
-  Send,
-  X,
   Music2,
   DoorOpen
 } from 'lucide-react';
 import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, doc, deleteDoc, getDocs, onSnapshot, addDoc, serverTimestamp, getDoc, orderBy, Timestamp, setDoc } from 'firebase/firestore';
-import { useCollection } from '@/firebase/firestore/use-collection';
+import { collection, query, doc, deleteDoc, onSnapshot, addDoc, serverTimestamp, getDoc, orderBy, Timestamp, setDoc } from 'firebase/firestore';
 import type { CollabRoom, CollabRoomMember, Message, User as UserType } from '@/lib/types';
-import Link from 'next/link';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { motion } from 'framer-motion';
@@ -45,7 +35,7 @@ import { Textarea } from '@/components/ui/textarea';
 import ChatInterface from '@/components/collab/chat-interface';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import React, { useEffect } from 'react';
+import JoinCollabRoomDialog from '@/components/collab/join-collab-room-dialog';
 
 const generateInviteCode = () => {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -63,7 +53,7 @@ function MemberList({ roomId }: { roomId: string }) {
     const memberIds = useMemo(() => members?.map(m => m.userId) || [], [members]);
 
     const usersQuery = useMemoFirebase(() => {
-        if (memberIds.length === 0) return null;
+        if (!firestore || memberIds.length === 0) return null;
         return query(collection(firestore, 'users'), where('id', 'in', memberIds.slice(0, 10)));
     }, [firestore, memberIds]);
 
@@ -103,6 +93,7 @@ export default function CollabSpace() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [showCreateRoom, setShowCreateRoom] = useState(false);
+  const [showJoinRoom, setShowJoinRoom] = useState(false);
   const [newRoomTopic, setNewRoomTopic] = useState('');
   const [newRoomDescription, setNewRoomDescription] = useState('');
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
@@ -111,10 +102,6 @@ export default function CollabSpace() {
   useEffect(() => {
     if (!user) return;
     setRoomsLoading(true);
-    // This is complex. We need to find all `members` subcollections containing the user's ID.
-    // Firestore doesn't support this query directly.
-    // The most scalable way is to have a `rooms` subcollection on the user document.
-    // For this prototype, we'll query all rooms and check membership client-side.
     const roomsQuery = query(collection(firestore, 'collabRooms'));
     const unsubscribe = onSnapshot(roomsQuery, async (querySnapshot) => {
         const userRooms: CollabRoom[] = [];
@@ -134,7 +121,7 @@ export default function CollabSpace() {
 
   // Fetch messages for selected room
   useEffect(() => {
-    if (!selectedRoom) {
+    if (!selectedRoom?.id) {
       setMessages([]);
       return;
     }
@@ -154,7 +141,7 @@ export default function CollabSpace() {
         setMessagesLoading(false);
     });
     return () => unsubscribe();
-  }, [selectedRoom, firestore]);
+  }, [selectedRoom?.id, firestore]);
 
   const handleCreateRoom = async () => {
     if (!user) return;
@@ -179,7 +166,7 @@ export default function CollabSpace() {
         await setDoc(memberRef, { userId: user.uid, joinedAt: serverTimestamp() });
         
         toast({ title: "Room created successfully!", description: `Invite code: ${newRoomData.inviteCode}`});
-        setSelectedRoom({ id: roomDocRef.id, ...newRoomData, createdAt: new Date() });
+        setSelectedRoom({ id: roomDocRef.id, ...newRoomData, createdAt: new Date() } as CollabRoom);
         setShowCreateRoom(false);
         setNewRoomTopic('');
         setNewRoomDescription('');
@@ -252,13 +239,21 @@ export default function CollabSpace() {
         <div className="w-80 border-r border-purple-500/20 glass-card p-6 overflow-y-auto">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-white">Study Rooms</h2>
-            <Button
-              onClick={() => setShowCreateRoom(true)}
-              size="icon"
-              className="bg-primary hover:bg-primary/90"
-            >
-              <Plus size={20} className="text-white" />
-            </Button>
+             <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                 <Button size="icon" className="bg-primary hover:bg-primary/90">
+                  <Plus size={20} className="text-white" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => setShowCreateRoom(true)}>
+                  Create Room
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowJoinRoom(true)}>
+                  Join Room
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {showCreateRoom && (
@@ -297,6 +292,8 @@ export default function CollabSpace() {
               </motion.div>
             </motion.div>
           )}
+
+          <JoinCollabRoomDialog open={showJoinRoom} onOpenChange={setShowJoinRoom} />
 
           <div className="space-y-3">
             {roomsLoading && <p className="text-muted-foreground">Loading rooms...</p>}
