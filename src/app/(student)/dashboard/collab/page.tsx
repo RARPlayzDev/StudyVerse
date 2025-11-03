@@ -20,7 +20,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useUser, useFirestore, useMemoFirebase, useDoc, useCollection } from '@/firebase';
-import { collection, query, doc, deleteDoc, onSnapshot, addDoc, serverTimestamp, getDoc, orderBy, Timestamp, where } from 'firebase/firestore';
+import { collection, query, doc, deleteDoc, onSnapshot, addDoc, serverTimestamp, getDoc, orderBy, Timestamp, where, setDoc } from 'firebase/firestore';
 import type { CollabRoom, CollabRoomMember, Message, User as UserType } from '@/lib/types';
 import {
   DropdownMenu,
@@ -37,6 +37,7 @@ import ChatInterface from '@/components/collab/chat-interface';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import JoinCollabRoomDialog from '@/components/collab/join-collab-room-dialog';
+import { Badge } from '@/components/ui/badge';
 
 const generateInviteCode = () => {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -154,7 +155,7 @@ export default function CollabSpace() {
   }, [selectedRoom, firestore]);
 
   const handleCreateRoom = async () => {
-    if (!user) return;
+    if (!user || !userData) return;
     if (!newRoomTopic.trim() || !newRoomDescription.trim()) {
       toast({ title: "Please fill out all fields.", variant: "destructive" });
       return;
@@ -190,11 +191,11 @@ export default function CollabSpace() {
   };
   
   const handleSendMessage = async (text: string) => {
-    if (!text.trim() || !selectedRoom || !user) return;
+    if (!text.trim() || !selectedRoom || !user || !userData) return;
 
     const newMessage: Omit<Message, 'id' | 'timestamp'> & { timestamp: any } = {
         senderId: user.uid,
-        senderName: userData?.name || user.displayName || 'User',
+        senderName: userData.name || user.displayName || 'Anonymous',
         senderAvatar: user.photoURL || '',
         text: text,
         timestamp: serverTimestamp(),
@@ -248,7 +249,7 @@ export default function CollabSpace() {
       <div className="flex-1 flex overflow-hidden">
         {/* Rooms List */}
         <div className="w-80 border-r border-purple-500/20 glass-card p-6 flex flex-col">
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex justify-between items-center mb-2">
             <h2 className="text-2xl font-bold text-white">Study Rooms</h2>
              <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -265,6 +266,9 @@ export default function CollabSpace() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+          </div>
+          <div className='mb-4'>
+            <Badge variant="secondary">{rooms.length} rooms joined</Badge>
           </div>
 
           {showCreateRoom && (

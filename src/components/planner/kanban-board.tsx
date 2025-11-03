@@ -88,13 +88,11 @@ export default function KanbanBoard() {
     
     useEffect(() => {
         if (tasks && user) {
-            const today = startOfDay(new Date());
             const now = new Date();
             const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
 
             tasks.forEach(task => {
-                // Auto-move to overdue
-                const isOverdue = isPast(new Date(task.dueDate)) && !isSameDay(new Date(task.dueDate), today);
+                const isOverdue = isPast(new Date(task.dueDate)) && !isSameDay(new Date(task.dueDate), startOfDay(new Date()));
                 if ((task.status === 'inprogress' || task.status === 'todo') && isOverdue) {
                      if (task.status !== 'overdue') {
                         handleStatusChange(task.id, 'overdue');
