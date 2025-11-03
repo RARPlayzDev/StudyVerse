@@ -54,19 +54,19 @@ const howItWorksSteps = [
 const testimonials = [
     {
         quote: "StudyVerse has completely changed how I approach my classes. The Focus Mode is a game-changer for my productivity!",
-        name: "Jessica Miller",
+        name: "Jashwanth Reddy",
         role: "Computer Science Student",
         avatar: "https://picsum.photos/seed/testimonial1/100/100"
     },
     {
         quote: "Being able to collaborate with my classmates in real-time study rooms has been invaluable, especially for tough subjects like calculus.",
-        name: "David Chen",
+        name: "Aasrith",
         role: "Engineering Student",
         avatar: "https://picsum.photos/seed/testimonial2/100/100"
     },
     {
         quote: "The AI Mentor helps me break down complex topics and create study plans that actually work. It's like having a personal tutor 24/7.",
-        name: "Sarah Jones",
+        name: "Krishna",
         role: "Pre-Med Student",
         avatar: "https://picsum.photos/seed/testimonial3/100/100"
     }
