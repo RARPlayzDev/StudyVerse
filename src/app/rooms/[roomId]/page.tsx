@@ -2,8 +2,8 @@
 'use client';
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { useDoc, useFirestore, useUser, useMemoFirebase, useCollection } from '@/firebase';
-import { doc, collection, addDoc, serverTimestamp, query, orderBy, Timestamp, updateDoc, arrayRemove, where } from 'firebase/firestore';
-import type { CollabRoom, Message, User as UserProfile } from '@/lib/types';
+import { doc, collection, addDoc, serverTimestamp, query, orderBy, Timestamp, updateDoc, arrayRemove } from 'firebase/firestore';
+import type { CollabRoom, Message } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import ChatInterface from '@/components/collab/chat-interface';
@@ -12,7 +12,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { Button } from '@/components/ui/button';
 import { DoorOpen, Music2, User as UserIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 
 export default function CollabRoomPage() {
   const { roomId } = useParams();
@@ -27,13 +27,6 @@ export default function CollabRoomPage() {
 
   const { data: room, isLoading: isRoomLoading, error: roomError } = useDoc<CollabRoom>(roomRef);
 
-  const membersQuery = useMemoFirebase(() => {
-    if (!room || room.members.length === 0) return null;
-    return query(collection(firestore, 'users'), where('id', 'in', room.members));
-  }, [firestore, room]);
-
-  const { data: memberProfiles, isLoading: areMembersLoading } = useCollection<UserProfile>(membersQuery);
-
   const messagesQuery = useMemoFirebase(() => {
     if (!roomId) return null;
     return query(collection(firestore, `collabRooms/${roomId}/messages`), orderBy('timestamp', 'asc'));
@@ -42,15 +35,23 @@ export default function CollabRoomPage() {
   const { data: messages, isLoading: areMessagesLoading } = useCollection<Message>(messagesQuery);
   
   useEffect(() => {
-    if (!isRoomLoading) {
+    // This effect handles redirection logic based on auth/data state.
+    if (!isRoomLoading && !isUserLoading) {
       if (roomError || !room) {
+        // If there's an error fetching the room or the room doesn't exist, show 404.
         return notFound();
       }
-      if (!isUserLoading && user && !room.members.includes(user.uid)) {
-          router.push('/dashboard/collab');
+      if (user && !room.members.includes(user.uid)) {
+        // If the user is logged in but not a member, redirect them.
+        router.push('/dashboard/collab');
+      }
+      if (!user) {
+        // If the user is not logged in at all, send them to the main login page.
+        router.push('/login');
       }
     }
-  }, [room, user, isRoomLoading, isUserLoading, roomError, router, notFound]);
+  }, [room, user, isRoomLoading, isUserLoading, roomError, router]);
+
 
   if (isUserLoading || isRoomLoading || !room || !user || !room.members.includes(user.uid)) {
     return (
@@ -96,21 +97,20 @@ export default function CollabRoomPage() {
         <main className="flex-1 grid grid-cols-1 lg:grid-cols-[320px_1fr_320px] gap-6">
             
             {/* Left Sidebar */}
-            <div className="flex flex-col gap-6 h-full">
+            <div className="flex-col gap-6 h-full lg:flex">
                  <Card className="bg-card/50 backdrop-blur-sm border-border/50 flex-1 flex flex-col">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><UserIcon className="h-5 w-5" /> Members ({memberProfiles?.length || 0})</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><UserIcon className="h-5 w-5" /> Members ({room.members.length})</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4 overflow-y-auto flex-1 p-6">
-                       {areMembersLoading ? Array.from({length: 3}).map((_,i) => <Skeleton key={i} className="h-8 w-full" />) 
-                       : memberProfiles?.map(member => (
-                           <div key={member.id} className="flex items-center gap-3">
+                       {room.members.map(memberId => (
+                           <div key={memberId} className="flex items-center gap-3">
                                <Avatar className="h-8 w-8 relative">
-                                   <AvatarImage src={member.avatarUrl} data-ai-hint="person portrait"/>
-                                   <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                                   <AvatarImage src={`https://picsum.photos/seed/${memberId}/100/100`} data-ai-hint="person portrait"/>
+                                   <AvatarFallback>{memberId.charAt(0)}</AvatarFallback>
                                    <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-card" />
                                </Avatar>
-                               <span>{member.name}</span>
+                               <span>User {memberId.substring(0, 6)}...</span>
                            </div>
                        ))}
                     </CardContent>
@@ -137,7 +137,7 @@ export default function CollabRoomPage() {
             </Card>
 
             {/* Right Sidebar */}
-            <div className="flex flex-col gap-6 h-full">
+            <div className="lg:flex flex-col gap-6 h-full">
                 <Card className="bg-card/50 backdrop-blur-sm border-border/50">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><Music2/> Study Music</CardTitle>
