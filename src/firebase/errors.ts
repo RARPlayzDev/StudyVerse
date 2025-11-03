@@ -1,3 +1,4 @@
+// Version 1.0 Final Push
 'use client';
 import { getAuth, type User } from 'firebase/auth';
 

@@ -1,3 +1,4 @@
+// Version 1.0 Final Push
 'use client';
 import { Message } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';

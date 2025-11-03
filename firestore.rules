@@ -1,3 +1,4 @@
+// Version 1.0 Final Push
 
 /**
  * @fileoverview Firestore Security Rules for StudySync.
@@ -90,5 +91,3 @@ service cloud.firestore {
     }
   }
 }
-
-    

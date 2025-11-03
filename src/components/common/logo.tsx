@@ -1,3 +1,4 @@
+// Version 1.0 Final Push
 import { BrainCircuit } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';

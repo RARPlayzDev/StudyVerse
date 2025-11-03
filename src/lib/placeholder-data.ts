@@ -1,3 +1,4 @@
+// Version 1.0 Final Push
 import type { User, Task, Note, CollabRoom, FocusSession, Message } from './types';
 import { Timestamp } from 'firebase/firestore';
 

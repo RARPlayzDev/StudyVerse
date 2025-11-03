@@ -1,3 +1,4 @@
+// Version 1.0 Final Push
 'use client';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -220,5 +221,3 @@ export function TaskDialog({ isOpen, setIsOpen, task, onSave }: TaskDialogProps)
     </Dialog>
   );
 }
-
-    

@@ -1,3 +1,4 @@
+// Version 1.0 Final Push
 import { Timestamp } from "firebase/firestore";
 
 export type User = {
@@ -68,5 +69,3 @@ export type Message = {
   text: string;
   timestamp: Timestamp;
 };
-
-    

@@ -1,3 +1,4 @@
+// Version 1.0 Final Push
 'use client';
 import PageTitle from "@/components/common/page-title";
 import KanbanBoard from "@/components/planner/kanban-board";

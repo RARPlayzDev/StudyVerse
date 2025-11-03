@@ -1,3 +1,4 @@
+// Version 1.0 Final Push
 import data from './placeholder-images.json';
 
 export type ImagePlaceholder = {
