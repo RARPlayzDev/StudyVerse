@@ -40,7 +40,8 @@ service cloud.firestore {
       allow delete: if isOwner(userId);
     }
 
-    match /users/{userId}/{subcollection}/{docId} {
+    // This recursive wildcard rule grants the owner full access to all their subcollections.
+    match /users/{userId}/{subcollection=**} {
        allow read, write: if isOwner(userId);
     }
 
