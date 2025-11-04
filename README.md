@@ -92,5 +92,10 @@ No use, distribution, or modification is allowed without explicit permission.
 
 ---
 
+<<<<<<< HEAD
 🔗 [**Live Preview — StudyVerse**](https://study-verse-vert.vercel.app/)  
 Hosted with ❤️ on **Vercel**
+=======
+🔗 **[Live Preview](https://study-verse-vert.vercel.app/)**  
+Hosted on **Vercel**
+>>>>>>> 7648ea849e6939158c94dbc494923f45a79f2f5a
