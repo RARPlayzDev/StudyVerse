@@ -1,5 +1,5 @@
-// Version 1.0 Final Push
-import { Timestamp } from "firebase/firestore";
+'use client';
+import { Timestamp } from 'firebase/firestore';
 
 export type User = {
   id: string;
@@ -42,10 +42,10 @@ export type CollabRoom = {
 };
 
 export type CollabRoomMember = {
-    id: string; // This will be the user's UID
-    userId: string;
-    joinedAt: Timestamp;
-}
+  id: string; // This will be the user's UID
+  userId: string;
+  joinedAt: Timestamp;
+};
 
 export type Message = {
   id: string;
@@ -62,8 +62,16 @@ export type Task = {
   userId: string;
   title: string;
   subject: string;
-  startDate: string;
   dueDate: string;
   priority: 'low' | 'medium' | 'high';
   status: 'todo' | 'inprogress' | 'done' | 'overdue';
+};
+
+export type Completion = {
+    id: string;
+    userId: string;
+    taskId: string;
+    title: string;
+    subject: string;
+    completedAt: Timestamp;
 }

@@ -8,7 +8,7 @@ import {
 import TaskDialog from '@/components/planner/task-dialog';
 import KanbanColumn from '@/components/planner/kanban-column';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, doc, updateDoc, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import type { Task } from '@/lib/types';
 import { createPortal } from 'react-dom';
 import TaskCard from './task-card';
@@ -58,13 +58,23 @@ export default function KanbanBoard() {
       
       // The 'overdue' column should only show tasks that are not 'done'.
       if (isOverdue) {
-        groupedTasks.overdue.push(task);
-      } else {
-         if (groupedTasks[task.status]) {
-            groupedTasks[task.status].push(task);
+        // Prevent adding to 'overdue' if it's already in another column for this render
+        if (!groupedTasks.todo.find(t => t.id === task.id) && !groupedTasks.inprogress.find(t => t.id === task.id)) {
+           groupedTasks.overdue.push(task);
         }
+      } 
+      // A task can be in its status column AND the overdue column
+      if (groupedTasks[task.status]) {
+          groupedTasks[task.status].push(task);
       }
     });
+    // De-duplicate tasks within each column as a safeguard
+    for (const colId of columns) {
+        const uniqueTasks = new Map<string, Task>();
+        groupedTasks[colId].forEach(task => uniqueTasks.set(task.id, task));
+        groupedTasks[colId] = Array.from(uniqueTasks.values());
+    }
+
     return groupedTasks;
   }, [tasks]);
 
@@ -92,17 +102,34 @@ export default function KanbanBoard() {
       return;
     }
     
-    const activeTask = tasks?.find(t => t.id === draggableId);
-    if (!activeTask || !user) return;
+    const movedTask = tasks?.find(t => t.id === draggableId);
+    if (!movedTask || !user) return;
 
     const newStatus = destination.droppableId as ColumnId;
 
+    // If task is moved to 'done'
+    if (newStatus === 'done') {
+        const completionLog = {
+            userId: user.uid,
+            taskId: movedTask.id,
+            title: movedTask.title,
+            subject: movedTask.subject,
+            completedAt: serverTimestamp(),
+        };
+        const completionsRef = collection(firestore, `users/${user.uid}/completions`);
+        const taskRef = doc(firestore, `users/${user.uid}/tasks`, movedTask.id);
+
+        await addDoc(completionsRef, completionLog);
+        await deleteDoc(taskRef);
+        return; // Stop further processing
+    }
+
     // A task moved to 'overdue' column should retain its original status ('todo' or 'inprogress')
     // unless it is being moved out of overdue.
-    const finalStatus = newStatus === 'overdue' ? activeTask.status : newStatus;
+    const finalStatus = newStatus === 'overdue' ? movedTask.status : newStatus;
 
-    if (activeTask.status !== finalStatus) {
-        const taskRef = doc(firestore, `users/${user.uid}/tasks`, activeTask.id);
+    if (movedTask.status !== finalStatus) {
+        const taskRef = doc(firestore, `users/${user.uid}/tasks`, movedTask.id);
         await updateDoc(taskRef, { status: finalStatus });
     }
   }
