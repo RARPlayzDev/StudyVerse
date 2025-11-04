@@ -1,4 +1,4 @@
-// v1.1 - Bug Fixes and Updates
+// v1.1 - Bug Fixes and Update
 // src/ai/flows/study-mentor.ts
 'use server';
 /**

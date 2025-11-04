@@ -1,4 +1,4 @@
-// v1.1 - Bug Fixes and Updates
+// v1.1 - Bug Fixes and Update
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {

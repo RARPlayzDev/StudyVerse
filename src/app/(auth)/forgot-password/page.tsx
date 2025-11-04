@@ -1,4 +1,4 @@
-// Version 1.0 Final Push
+// v1.1 - Bug Fixes and updates
 "use client";
 
 import Link from "next/link";
