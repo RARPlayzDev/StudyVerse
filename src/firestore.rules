@@ -26,12 +26,14 @@ service cloud.firestore {
     }
 
     match /notes/{noteId} {
-        // Any authenticated user can read any note
-        allow get, list: if request.auth != null;
-        // Any authenticated user can create a note, as long as they set themselves as the owner
+        // Any authenticated user can get a single note.
+        allow get: if request.auth != null;
+        // Any authenticated user can create a note, as long as they set themselves as the owner.
         allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-        // Only the user who created the note can update or delete it
+        // Only the user who created the note can update or delete it.
         allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+        // Allow list for the entire collection for any authenticated user.
+        allow list: if request.auth != null;
     }
 
     match /collabRooms/{roomId} {
