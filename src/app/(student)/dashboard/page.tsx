@@ -34,16 +34,11 @@ import {
 import PageTitle from "@/components/common/page-title"
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, query, orderBy, limit, where } from "firebase/firestore"
-import type { Task, Note as NoteType, CollabRoom } from "@/lib/types"
+import type { Note as NoteType, CollabRoom } from "@/lib/types"
 
 export default function Dashboard() {
   const { user } = useUser();
   const firestore = useFirestore();
-
-  const tasksQuery = useMemoFirebase(() => {
-    if (!user) return null;
-    return query(collection(firestore, 'users', user.uid, 'tasks'), orderBy('dueDate'), limit(3));
-  }, [firestore, user]);
   
   const notesQuery = useMemoFirebase(() => {
     if (!user) return null;
@@ -52,16 +47,13 @@ export default function Dashboard() {
 
   const roomsQuery = useMemoFirebase(() => {
     if (!user) return null;
+    // This query is incorrect for subcollections and will be fixed later.
+    // For now, it will return no rooms.
     return query(collection(firestore, 'collabRooms'), where('members', 'array-contains', user.uid));
   }, [firestore, user]);
 
-  const { data: upcomingTasks, isLoading: tasksLoading } = useCollection<Task>(tasksQuery);
   const { data: recentNotes, isLoading: notesLoading } = useCollection<NoteType>(notesQuery);
   const { data: activeRooms, isLoading: roomsLoading } = useCollection<CollabRoom>(roomsQuery);
-
-  const upcomingTasksFiltered = upcomingTasks?.filter(t => t.status !== 'done');
-  const tasksDueCount = upcomingTasksFiltered?.length ?? 0;
-  const tasksCompletedCount = upcomingTasks?.filter(t => t.status === 'done').length ?? 0;
 
   return (
     <>
@@ -84,20 +76,8 @@ export default function Dashboard() {
         <Card className="bg-card/50 backdrop-blur-sm border-border/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Tasks Due Soon
+              New Notes
             </CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{tasksDueCount}</div>
-            <p className="text-xs text-muted-foreground">
-              {tasksCompletedCount} tasks completed
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New Notes</CardTitle>
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -119,57 +99,33 @@ export default function Dashboard() {
             </p>
           </CardContent>
         </Card>
+         <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Planner
+            </CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">Coming Soon</div>
+            <p className="text-xs text-muted-foreground">
+              A new planner experience is on the way.
+            </p>
+          </CardContent>
+        </Card>
       </div>
       <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3 mt-8">
         <Card className="xl:col-span-2 bg-card/50 backdrop-blur-sm border-border/50">
-          <CardHeader className="flex flex-row items-center">
-            <div className="grid gap-2">
-              <CardTitle>Upcoming Tasks</CardTitle>
-              <CardDescription>
-                Stay on top of your deadlines.
-              </CardDescription>
-            </div>
-            <Button asChild size="sm" className="ml-auto gap-1">
-              <Link href="/dashboard/planner">
-                View All
-                <ArrowUpRight className="h-4 w-4" />
-              </Link>
-            </Button>
+           <CardHeader>
+            <CardTitle>Welcome to StudyVerse</CardTitle>
+            <CardDescription>
+              Your all-in-one productivity hub. Use the navigation on the left to get started.
+            </CardDescription>
           </CardHeader>
           <CardContent>
-             {tasksLoading ? (
-              <p className="text-muted-foreground text-sm">Loading tasks...</p>
-             ) : (tasksDueCount > 0 && upcomingTasksFiltered) ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Task</TableHead>
-                    <TableHead className="hidden xl:table-column">Subject</TableHead>
-                    <TableHead className="hidden md:table-cell">Priority</TableHead>
-                    <TableHead className="text-right">Due Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {upcomingTasksFiltered.map((task) => (
-                    <TableRow key={task.id}>
-                      <TableCell><div className="font-medium">{task.title}</div></TableCell>
-                      <TableCell className="hidden xl:table-column">{task.subject}</TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        <Badge variant={task.priority === 'high' ? 'destructive' : task.priority === 'medium' ? 'secondary' : 'outline'} className="capitalize">{task.priority}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">{task.dueDate}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-             ) : (
-                <div className="text-center py-10 text-muted-foreground">
-                  <p>No upcoming tasks. Enjoy your break!</p>
-                   <Button asChild variant="link">
-                      <Link href="/dashboard/planner">Add a new task</Link>
-                  </Button>
-                </div>
-             )}
+             <div className="text-center py-10 text-muted-foreground">
+                <p>Explore features like Focus Mode, the Notes Hub, and the AI Mentor!</p>
+            </div>
           </CardContent>
         </Card>
         <Card className="bg-card/50 backdrop-blur-sm border-border/50">

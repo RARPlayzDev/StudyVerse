@@ -3,12 +3,12 @@
 import {
   BrainCircuit,
   Focus,
-  Kanban,
   LayoutDashboard,
   LogOut,
   NotebookText,
   Settings,
   Users,
+  Construction, // Using a placeholder icon
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -26,7 +26,7 @@ import { useAuth } from '@/firebase';
 const mainNavItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/dashboard/focus', icon: Focus, label: 'Focus' },
-  { href: '/dashboard/planner', icon: Kanban, label: 'Planner' },
+  { href: '/dashboard/planner', icon: Construction, label: 'Planner (Coming Soon)' },
   { href: '/dashboard/notes', icon: NotebookText, label: 'Notes Hub' },
   { href: '/dashboard/collab', icon: Users, label: 'Collab Space' },
   { href: '/dashboard/mentor', icon: BrainCircuit, label: 'AI Mentor' },

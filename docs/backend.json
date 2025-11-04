@@ -1,3 +1,4 @@
+// Version 1.0 Final Push
 {
   "entities": {
     "User": {
@@ -82,64 +83,6 @@
         "duration",
         "date",
         "taskTag"
-      ]
-    },
-    "Task": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Task",
-      "type": "object",
-      "description": "Represents a task in the study planner.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the task."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User. (Relationship: User 1:N Task)"
-        },
-        "title": {
-          "type": "string",
-          "description": "The title of the task."
-        },
-        "subject": {
-          "type": "string",
-          "description": "The subject of the task."
-        },
-        "startDate": {
-          "type": "string",
-          "description": "The start date of the task.",
-          "format": "date-time"
-        },
-        "dueDate": {
-          "type": "string",
-          "description": "The due date of the task.",
-          "format": "date-time"
-        },
-        "priority": {
-          "type": "string",
-          "description": "The priority of the task (e.g., high, medium, low)."
-        },
-        "status": {
-          "type": "string",
-          "description": "The current status of the task.",
-          "enum": ["todo", "inprogress", "done", "overdue"]
-        },
-        "doneAt": {
-          "type": ["string", "null"],
-          "description": "Timestamp when the task was moved to 'done'.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "userId",
-        "title",
-        "subject",
-        "startDate",
-        "dueDate",
-        "priority",
-        "status"
       ]
     },
     "Note": {
@@ -407,26 +350,6 @@
         }
       },
       {
-        "path": "/users/{userId}/tasks/{taskId}",
-        "definition": {
-          "entityName": "Task",
-          "schema": {
-            "$ref": "#/backend/entities/Task"
-          },
-          "description": "Stores task data for each user. Includes user ID and task ID in the path.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier for the user."
-            },
-            {
-              "name": "taskId",
-              "description": "The unique identifier for the task."
-            }
-          ]
-        }
-      },
-      {
         "path": "/notes/{noteId}",
         "definition": {
           "entityName": "Note",
@@ -554,5 +477,3 @@
     "reasoning": "The Firestore data structure is designed to ensure authorization independence, clarity, and scalability, aligning with the core principles outlined. It leverages path-based ownership for private user data and membership maps for collaborative data. Authorization independence is achieved through denormalization. Specifically, the `members` array from the `CollabRoom` is duplicated in the `ChatMessage` documents to eliminate the need for `get()` calls in security rules, allowing messages to be created atomically. Segregation is used to ensure that all documents in a collection share the same security posture, which simplifies security rules. The structure efficiently supports required QAPs by using path-based ownership for user-specific data like `FocusSession`, `Task`, `Note`, and dedicated collections with membership maps for collaborative resources like `CollabRoom` and its `ChatMessage`. Global roles are managed using the presence of documents in dedicated collections (e.g., `roles_admin/{uid}`). This entire structure minimizes complexity and enhances debuggability."
   }
 }
-
-    

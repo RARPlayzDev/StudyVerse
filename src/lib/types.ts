@@ -12,18 +12,6 @@ export type User = {
   banned: boolean;
 };
 
-export type Task = {
-  id: string;
-  userId: string;
-  title: string;
-  subject:string;
-  startDate: string; // Storing as ISO string e.g. .toISOString()
-  dueDate: string; // Storing as ISO string e.g. .toISOString()
-  priority: 'low' | 'medium' | 'high';
-  status: 'todo' | 'inprogress' | 'done' | 'overdue';
-  doneAt?: Timestamp | null;
-};
-
 export type Note = {
   id: string;
   userId: string;
@@ -67,5 +55,5 @@ export type Message = {
   senderName: string;
   senderAvatar?: string;
   text: string;
-  timestamp: Timestamp;
+  timestamp: any;
 };
