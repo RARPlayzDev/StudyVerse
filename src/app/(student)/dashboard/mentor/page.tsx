@@ -1,4 +1,4 @@
-// Version 1.0 Final Push
+// v1.1 - Bug Fixes and Updates
 'use client';
 import { useState } from 'react';
 import PageTitle from '@/components/common/page-title';
