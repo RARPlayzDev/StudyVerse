@@ -1,16 +1,10 @@
 'use client';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import {
-  DndContext,
+  DragDropContext,
   DragEndEvent,
-  DragOverEvent,
   DragStartEvent,
-  PointerSensor,
-  useSensor,
-  useSensors,
 } from '@hello-pangea/dnd';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
 import TaskDialog from '@/components/planner/task-dialog';
 import KanbanColumn from '@/components/planner/kanban-column';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
@@ -54,9 +48,16 @@ export default function KanbanBoard() {
       done: [],
     };
     tasks?.forEach((task) => {
-      const status: ColumnId = new Date(task.dueDate) < new Date() && task.status !== 'done' ? 'overdue' : task.status;
-      if (groupedTasks[status]) {
-        groupedTasks[status].push(task);
+      // Logic to determine if a task is overdue
+      const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'done';
+      
+      // The 'overdue' column should only show tasks that are not 'done'.
+      if (isOverdue) {
+        groupedTasks.overdue.push(task);
+      } else {
+         if (groupedTasks[task.status]) {
+            groupedTasks[task.status].push(task);
+        }
       }
     });
     return groupedTasks;
@@ -65,49 +66,45 @@ export default function KanbanBoard() {
 
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 10,
-      },
-    })
-  );
-
   function onDragStart(event: DragStartEvent) {
-    if (event.active.data.current?.type === "Task") {
-      setActiveTask(event.active.data.current.task);
-      return;
+    const { draggableId } = event;
+    const task = tasks?.find(t => t.id === draggableId);
+    if (task) {
+      setActiveTask(task);
     }
   }
 
-  async function onDragEnd(event: DragEndEvent) {
+  async function onDragEnd(result: DragEndEvent) {
      setActiveTask(null);
-    const { active, over } = event;
-    if (!over) return;
+    const { destination, source, draggableId } = result;
 
-    const activeId = active.id;
-    const overId = over.id;
+    if (!destination) return;
 
-    if (activeId === overId) return;
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) {
+      return;
+    }
     
-    const isActiveATask = active.data.current?.type === "Task";
-    if (!isActiveATask) return;
+    const activeTask = tasks?.find(t => t.id === draggableId);
+    if (!activeTask || !user) return;
 
-    const activeTask = tasks?.find(t => t.id === activeId);
-    if (!activeTask) return;
+    const newStatus = destination.droppableId as ColumnId;
 
-    const overColumnId = over.data.current?.type === 'Column' ? over.id as ColumnId : over.data.current?.task.status as ColumnId;
+    // A task moved to 'overdue' column should retain its original status ('todo' or 'inprogress')
+    // unless it is being moved out of overdue.
+    const finalStatus = newStatus === 'overdue' ? activeTask.status : newStatus;
 
-    if (activeTask.status !== overColumnId) {
-        const taskRef = doc(firestore, `users/${user!.uid}/tasks`, activeTask.id);
-        await updateDoc(taskRef, { status: overColumnId });
+    if (activeTask.status !== finalStatus) {
+        const taskRef = doc(firestore, `users/${user.uid}/tasks`, activeTask.id);
+        await updateDoc(taskRef, { status: finalStatus });
     }
   }
 
   return (
     <>
-      <DndContext
-        sensors={sensors}
+      <DragDropContext
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
       >
@@ -131,7 +128,7 @@ export default function KanbanBoard() {
             </div>,
             document.body
           )}
-      </DndContext>
+      </DragDropContext>
       <TaskDialog
         open={isTaskDialogOpen}
         onOpenChange={setTaskDialogOpen}
