@@ -73,14 +73,14 @@ export default function MentorPage() {
                 timestamp: new Date(),
             };
             setMessages(prev => [...prev, aiMessage]);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to get AI advice:", error);
             const errorMessage: Message = {
                  id: `m${messages.length + 2}`,
                 senderId: 'ai-mentor',
                 senderName: 'AI Mentor',
                 senderAvatar: 'https://picsum.photos/seed/ai-mentor/100/100',
-                text: "I'm sorry, but I'm having trouble connecting right now. Please try again in a moment.",
+                text: `I'm sorry, I encountered an issue. ${error.message || "Please try rephrasing your question or try again in a moment."}`,
                 timestamp: new Date(),
             };
             setMessages(prev => [...prev, errorMessage]);

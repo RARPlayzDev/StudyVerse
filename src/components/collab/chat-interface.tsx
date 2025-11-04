@@ -9,6 +9,7 @@ import { FormEvent, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useUser as useAuthUser } from '@/firebase';
 import { formatDistanceToNow } from 'date-fns';
+import ReactMarkdown from 'react-markdown';
 
 type ChatInterfaceProps = {
     messages: Message[];
@@ -78,7 +79,9 @@ export default function ChatInterface({ messages, onSendMessage, isLoading }: Ch
                                     ? 'bg-primary text-primary-foreground shadow-md' 
                                     : 'bg-background/60'
                             )}>
-                                <p className="text-sm">{message.text}</p>
+                                <article className="prose prose-sm dark:prose-invert max-w-none text-current">
+                                    <ReactMarkdown>{message.text}</ReactMarkdown>
+                                </article>
                             </div>
                             <div className="text-xs text-muted-foreground px-1">
                                 {getFormattedTimestamp(message.timestamp)}
