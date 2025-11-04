@@ -32,9 +32,13 @@ service cloud.firestore {
         allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
         // Only the user who created the note can update or delete it.
         allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
-        // Allow list for the entire collection for any authenticated user.
+    }
+
+    // Allow listing the entire 'notes' collection for any authenticated user.
+    match /notes/{noteId} {
         allow list: if request.auth != null;
     }
+
 
     match /collabRooms/{roomId} {
       // Allow any authenticated user to get a room document to check its details before joining/entering
