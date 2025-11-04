@@ -34,8 +34,13 @@ service cloud.firestore {
     }
     
     // Dedicated rules for the planner feature
-    match /planner/{userId}/{documents=**} {
-        allow read, write: if isOwner(userId);
+    match /planner/{userId} {
+      allow read, write: if isOwner(userId);
+
+      // Explicitly allow list/read/write on the tasks subcollection
+      match /tasks/{taskId} {
+        allow list, read, write: if isOwner(userId);
+      }
     }
 
     match /notes/{noteId} {
