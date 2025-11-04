@@ -1,23 +1,19 @@
 'use client';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import {
-  DndContext,
+  DragDropContext,
   DragEndEvent,
-  DragOverEvent,
   DragStartEvent,
-  PointerSensor,
-  useSensor,
-  useSensors,
 } from '@hello-pangea/dnd';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import TaskDialog from '@/components/planner/task-dialog';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import type { Task } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { KanbanColumn, KanbanTaskCard } from './kanban-column';
+import { KanbanColumn } from './kanban-column';
 import {
   Select,
   SelectContent,
@@ -27,12 +23,6 @@ import {
 } from "@/components/ui/select"
 
 type Status = 'todo' | 'done';
-
-const statusMap: Record<Status, string> = {
-  todo: 'To Do',
-  done: 'Done',
-};
-
 
 export default function KanbanBoard() {
   const { user } = useUser();
@@ -52,9 +42,7 @@ export default function KanbanBoard() {
 
   const filteredTasks = useMemo(() => {
     if (subjectFilter === 'all') return tasks;
-    // The 'subject' field doesn't exist on the Task type, so this won't actually filter.
-    // This is kept for UI demonstration purposes. In a real app, you'd add the field.
-    return tasks;
+    return tasks?.filter(task => task.subject === subjectFilter);
   }, [tasks, subjectFilter]);
 
   const openTaskDialog = (task: Task | null = null) => {
@@ -63,26 +51,34 @@ export default function KanbanBoard() {
   };
 
   const handleDragStart = (event: DragStartEvent) => {
-    const { active } = event;
-    const task = tasks?.find(t => t.id === active.id);
+    const { draggableId } = event;
+    const task = tasks?.find(t => t.id === draggableId);
     if (task) {
       setActiveTask(task);
     }
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
     setActiveTask(null);
 
-    if (!over) return;
-    if (active.id === over.id) return;
-    
-    const originalStatus = tasks?.find(t => t.id === active.id)?.status;
-    const newStatus = over.id as Status;
+    const { draggableId, destination } = event;
 
-    if (originalStatus !== newStatus && user) {
-        const taskRef = doc(firestore, `users/${user.uid}/tasks`, active.id as string);
-        const updateData = { status: newStatus };
+    if (!destination) return;
+    
+    const activeId = draggableId;
+    const destinationId = destination.droppableId;
+
+    const originalTask = tasks?.find(t => t.id === activeId);
+
+    if (originalTask && originalTask.status !== destinationId && user) {
+        const taskRef = doc(firestore, `users/${user.uid}/tasks`, activeId as string);
+        const newStatus = destinationId as Status;
+        
+        const updateData: {status: Status, completedAt?: any} = { status: newStatus };
+        if (newStatus === 'done' && originalTask.status !== 'done') {
+            updateData.completedAt = serverTimestamp();
+        }
+
         await updateDoc(taskRef, updateData).catch(err => {
             const permissionError = new FirestorePermissionError({
                 path: taskRef.path,
@@ -114,12 +110,12 @@ export default function KanbanBoard() {
   const allSubjects = useMemo(() => {
     const subjects = new Set<string>();
     tasks?.forEach(task => {
-      // Again, 'subject' is not on the Task type.
+        if(task.subject) {
+            subjects.add(task.subject);
+        }
     });
     return Array.from(subjects);
   }, [tasks]);
-
-  const sensors = useSensors(useSensor(PointerSensor));
 
   return (
     <>
@@ -143,8 +139,7 @@ export default function KanbanBoard() {
         </Button>
       </div>
 
-      <DndContext
-        sensors={sensors}
+      <DragDropContext
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
@@ -153,14 +148,7 @@ export default function KanbanBoard() {
             <KanbanColumn key={col.id} id={col.id} title={col.title} tasks={col.tasks} onTaskClick={openTaskDialog} isLoading={isLoading}/>
           ))}
         </div>
-         {activeTask && (
-            <div className="fixed inset-0 pointer-events-none z-[100]">
-                <div className="absolute top-0 left-0">
-                     <KanbanTaskCard task={activeTask} isOverlay />
-                </div>
-            </div>
-        )}
-      </DndContext>
+      </DragDropContext>
       
       {isDialogOpen && (
           <TaskDialog
