@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   DragDropContext,
   DragEndEvent,
@@ -22,6 +22,11 @@ export default function KanbanBoard() {
   const firestore = useFirestore();
   const [isTaskDialogOpen, setTaskDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const tasksQuery = useMemoFirebase(() => {
     if (!user) return null;
@@ -120,7 +125,7 @@ export default function KanbanBoard() {
             />
           ))}
         </div>
-         {typeof document !== 'undefined' && createPortal(
+         {isClient && createPortal(
             <div className="pointer-events-none">
               {activeTask && (
                 <TaskCard task={activeTask} isOverlay />
