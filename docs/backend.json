@@ -345,13 +345,13 @@
         }
       },
        {
-        "path": "/planner/{userId}/tasks/{taskId}",
+        "path": "/users/{userId}/tasks/{taskId}",
         "definition": {
           "entityName": "Task",
           "schema": {
             "$ref": "#/backend/entities/Task"
           },
-          "description": "Subcollection storing tasks for a specific user within the isolated planner collection.",
+          "description": "Subcollection storing tasks for a specific user within the user's document.",
           "params": [
             { "name": "userId", "description": "The unique identifier for the user." },
             { "name": "taskId", "description": "The unique identifier for the task." }

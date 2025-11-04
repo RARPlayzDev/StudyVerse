@@ -33,7 +33,7 @@ export default function KanbanBoard() {
 
   const tasksQuery = useMemoFirebase(() => {
     if (!user) return null;
-    return query(collection(firestore, `planner/${user.uid}/tasks`), orderBy('createdAt', 'desc'));
+    return query(collection(firestore, `users/${user.uid}/tasks`), orderBy('createdAt', 'desc'));
   }, [user, firestore]);
 
   const { data: tasks, isLoading } = useCollection<Task>(tasksQuery);
@@ -59,7 +59,7 @@ export default function KanbanBoard() {
     const originalTask = tasks?.find(t => t.id === activeId);
 
     if (originalTask && originalTask.status !== destinationId && user) {
-        const taskRef = doc(firestore, `planner/${user.uid}/tasks`, activeId as string);
+        const taskRef = doc(firestore, `users/${user.uid}/tasks`, activeId as string);
         const newStatus = destinationId as Status;
         
         const updateData: {status: Status, completedAt?: any} = { status: newStatus };

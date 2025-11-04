@@ -9,7 +9,7 @@
  *
  * Data Structure:
  * - /users/{userId}: Stores personal user data. Only the user can access their own data.
- * - /planner/{userId}/{tasks=**}: User-owned planner data.
+ * - /users/{userId}/{subcollection=**}: User-owned subcollections like tasks, focus sessions, etc.
  * - /notes/{noteId}: Stores notes. Any user can create, but only the owner can modify/delete.
  * - /collabRooms/{roomId}: Stores collaboration room data. Any authenticated user can read/list.
  * - /collabRooms/{roomId}/members/{userId}: Subcollection for members. A user can only manage their own membership.
@@ -29,18 +29,9 @@ service cloud.firestore {
       return request.auth != null && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
     
-    match /users/{userId}/{document=**} {
+    // This recursive wildcard rule grants the owner full access to all their subcollections.
+    match /users/{userId}/{documents=**} {
        allow read, write: if isOwner(userId);
-    }
-    
-    // Dedicated rules for the planner feature
-    match /planner/{userId} {
-      allow read, write: if isOwner(userId);
-
-      // Explicitly allow list/read/write on the tasks subcollection
-      match /tasks/{taskId} {
-        allow list, read, write: if isOwner(userId);
-      }
     }
 
     match /notes/{noteId} {

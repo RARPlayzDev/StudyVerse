@@ -26,7 +26,7 @@ export default function PlannerPage() {
     if (!user) return null;
     const sevenDaysAgo = startOfDay(subDays(new Date(), 6));
     return query(
-      collection(firestore, `planner/${user.uid}/tasks`),
+      collection(firestore, `users/${user.uid}/tasks`),
       where('status', '==', 'done'),
       where('completedAt', '>=', Timestamp.fromDate(sevenDaysAgo))
     );

@@ -85,7 +85,7 @@ export default function TaskDialog({ open, onOpenChange, task }: TaskDialogProps
     if (!user) return;
     setIsSaving(true);
     
-    const collectionRef = collection(firestore, `planner/${user.uid}/tasks`);
+    const collectionRef = collection(firestore, `users/${user.uid}/tasks`);
 
     try {
       if (task) {
@@ -141,7 +141,7 @@ export default function TaskDialog({ open, onOpenChange, task }: TaskDialogProps
     if (!user || !task) return;
     setIsSaving(true);
     try {
-        const taskRef = doc(firestore, `planner/${user.uid}/tasks`, task.id);
+        const taskRef = doc(firestore, `users/${user.uid}/tasks`, task.id);
         await deleteDoc(taskRef).catch(err => {
             const permissionError = new FirestorePermissionError({
                 path: taskRef.path,
