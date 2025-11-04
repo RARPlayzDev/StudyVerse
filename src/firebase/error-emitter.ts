@@ -1,4 +1,3 @@
-// Version 1.0 Final Push
 'use client';
 import { FirestorePermissionError } from '@/firebase/errors';
 

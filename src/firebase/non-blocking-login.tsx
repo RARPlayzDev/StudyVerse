@@ -1,4 +1,3 @@
-// Version 1.0 Final Push
 'use client';
 import {
   Auth, // Import Auth type for type hinting
