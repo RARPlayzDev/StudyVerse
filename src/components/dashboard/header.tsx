@@ -71,20 +71,22 @@ export default function Header() {
             <span className="hidden md:inline-block text-sm text-muted-foreground">
                 Welcome back, {userData?.name?.split(' ')[0] || user?.displayName?.split(' ')[0] || 'Student'}!
             </span>
-            <DropdownMenu>
+             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="secondary" size="icon" className="rounded-full">
-                        <Avatar>
-                            {user?.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'user'} data-ai-hint="woman portrait" />}
-                            <AvatarFallback>{userData?.name?.charAt(0) || user?.displayName?.charAt(0) || user?.email?.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <span className="sr-only">Toggle user menu</span>
+                    <Button variant="secondary" size="icon" className="rounded-full" asChild>
+                        <Link href="/dashboard/settings">
+                            <Avatar>
+                                {user?.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'user'} data-ai-hint="woman portrait" />}
+                                <AvatarFallback>{userData?.name?.charAt(0) || user?.displayName?.charAt(0) || user?.email?.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <span className="sr-only">Go to settings</span>
+                        </Link>
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem>Settings</DropdownMenuItem>
+                    <DropdownMenuItem asChild><Link href="/dashboard/settings">Settings</Link></DropdownMenuItem>
                     <DropdownMenuItem>Support</DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout}>
