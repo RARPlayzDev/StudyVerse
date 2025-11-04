@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import PageTitle from '@/components/common/page-title';
 import KanbanBoard from '@/components/planner/kanban-board';
 import {
@@ -24,9 +24,8 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
-import { collection, query, where, Timestamp } from 'firebase/firestore';
+import { collection, query, where, Timestamp, getDocs, writeBatch } from 'firebase/firestore';
 import type { Task, Completion } from '@/lib/types';
-import { useMemo } from 'react';
 import {
   subDays,
   eachDayOfInterval,
@@ -58,6 +57,38 @@ export default function PlannerPage() {
   }, [firestore, user, sevenDaysAgo]);
 
   const { data: recentCompletions, isLoading: completionsLoading } = useCollection<Completion>(completionsQuery);
+
+  // Effect to clean up old completions
+  useEffect(() => {
+    async function cleanupOldCompletions() {
+      if (!user || !firestore) return;
+
+      const retentionDays = 7;
+      const cutoffDate = subDays(new Date(), retentionDays);
+      const cutoffTimestamp = Timestamp.fromDate(cutoffDate);
+
+      const oldCompletionsQuery = query(
+        collection(firestore, `users/${user.uid}/completions`),
+        where('completedAt', '<', cutoffTimestamp)
+      );
+
+      try {
+        const querySnapshot = await getDocs(oldCompletionsQuery);
+        if (!querySnapshot.empty) {
+          const batch = writeBatch(firestore);
+          querySnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+          });
+          await batch.commit();
+          console.log(`Cleaned up ${querySnapshot.size} old completion records.`);
+        }
+      } catch (error) {
+        console.error("Error cleaning up old completions:", error);
+      }
+    }
+
+    cleanupOldCompletions();
+  }, [user, firestore]);
 
   const taskCompletionData = useMemo(() => {
     const last7Days = eachDayOfInterval({
