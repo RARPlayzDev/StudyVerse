@@ -9,7 +9,7 @@
  *
  * Data Structure:
  * - /users/{userId}: Stores personal user data. Only the user can access their own data.
- * - /users/{userId}/{subcollection=**}: User-owned subcollections like tasks, focus sessions, etc.
+ * - /users/{userId}/{documents=**}: User-owned subcollections like tasks, focus sessions, etc.
  * - /notes/{noteId}: Stores notes. Any user can create, but only the owner can modify/delete.
  * - /collabRooms/{roomId}: Stores collaboration room data. Any authenticated user can read/list.
  * - /collabRooms/{roomId}/members/{userId}: Subcollection for members. A user can only manage their own membership.
