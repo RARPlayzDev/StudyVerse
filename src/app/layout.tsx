@@ -5,6 +5,7 @@ import { Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from "@/firebase";
 import { FirebaseErrorListener } from "@/components/FirebaseErrorListener";
+import { ThemeProvider } from "@/components/common/theme-provider";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -27,11 +28,13 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
       </head>
       <body className={`${inter.variable} font-body antialiased bg-background min-h-screen`} suppressHydrationWarning>
-          <FirebaseClientProvider>
-            <FirebaseErrorListener />
-            {children}
-          </FirebaseClientProvider>
-          <Toaster />
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+            <FirebaseClientProvider>
+              <FirebaseErrorListener />
+              {children}
+            </FirebaseClientProvider>
+            <Toaster />
+          </ThemeProvider>
       </body>
     </html>
   );
