@@ -33,7 +33,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { updateProfile, updatePassword, deleteUser } from 'firebase/auth';
 import { Badge } from '@/components/ui/badge';
 import DeleteAccountDialog from '@/components/settings/delete-account-dialog';
-import DisplayTheme from '@/components/settings/display-theme';
 
 const profileFormSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters.'),
@@ -205,9 +204,6 @@ export default function SettingsPage() {
             </Form>
           </CardContent>
         </Card>
-        
-        {/* Display Theme */}
-        <DisplayTheme />
 
         {/* Account Settings */}
         <Card className="bg-card/50 backdrop-blur-sm border-border/50">
