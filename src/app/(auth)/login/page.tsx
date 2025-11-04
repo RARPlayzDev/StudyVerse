@@ -13,7 +13,6 @@ import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, useUser, useFirestore } from "@/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { signInWithGoogle } from "@/firebase/auth/google-signin";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -60,10 +59,6 @@ export default function LoginPage() {
           variant: "destructive",
         });
       });
-  };
-
-  const handleGoogleSignIn = () => {
-    signInWithGoogle(auth, firestore);
   };
 
   if (isUserLoading || user) {
@@ -117,9 +112,6 @@ export default function LoginPage() {
               </div>
               <Button type="submit" className="w-full">
                 Login
-              </Button>
-              <Button variant="outline" className="w-full" type="button" onClick={handleGoogleSignIn}>
-                Login with Google
               </Button>
             </div>
           </form>

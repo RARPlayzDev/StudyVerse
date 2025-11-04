@@ -45,5 +45,3 @@ export function signInWithGoogle(auth: Auth, firestore: Firestore) {
         // You can also use a toast notification to inform the user.
     });
 }
-
-    

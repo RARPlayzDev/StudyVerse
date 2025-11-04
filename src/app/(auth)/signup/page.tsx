@@ -17,7 +17,6 @@ import Logo from '@/components/common/logo';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, useFirestore, useUser } from '@/firebase';
-import { signInWithGoogle } from '@/firebase/auth/google-signin';
 import { User, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -92,10 +91,6 @@ export default function SignupPage() {
       });
   };
   
-  const handleGoogleSignIn = () => {
-    signInWithGoogle(auth, firestore);
-  };
-
   if (isUserLoading || user) {
     return (
       <div className="w-full max-w-md text-center">
@@ -167,9 +162,6 @@ export default function SignupPage() {
               <Button type="submit" className="w-full">
                 Create an account
               </Button>
-              <Button variant="outline" className="w-full" type="button" onClick={handleGoogleSignIn}>
-                Sign up with Google
-              </Button>
             </div>
           </form>
           <div className="mt-4 text-center text-sm">
@@ -183,5 +175,3 @@ export default function SignupPage() {
     </div>
   );
 }
-
-    
