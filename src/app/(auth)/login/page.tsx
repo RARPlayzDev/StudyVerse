@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import Logo from "@/components/common/logo";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth, useUser } from "@/firebase";
+import { useAuth, useUser, useFirestore } from "@/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { signInWithGoogle } from "@/firebase/auth/google-signin";
 
@@ -21,6 +21,7 @@ export default function LoginPage() {
   const { toast } = useToast();
   const router = useRouter();
   const auth = useAuth();
+  const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   
   useEffect(() => {
@@ -62,7 +63,7 @@ export default function LoginPage() {
   };
 
   const handleGoogleSignIn = () => {
-    signInWithGoogle(auth);
+    signInWithGoogle(auth, firestore);
   };
 
   if (isUserLoading || user) {
@@ -133,3 +134,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    

@@ -45,7 +45,7 @@ export default function SignupPage() {
     
     const newUser = {
       id: user.uid,
-      name,
+      name: name || user.displayName,
       email: user.email,
       role: 'student',
       joinDate: new Date().toISOString(),
@@ -93,7 +93,7 @@ export default function SignupPage() {
   };
   
   const handleGoogleSignIn = () => {
-    signInWithGoogle(auth);
+    signInWithGoogle(auth, firestore);
   };
 
   if (isUserLoading || user) {
@@ -183,3 +183,5 @@ export default function SignupPage() {
     </div>
   );
 }
+
+    
