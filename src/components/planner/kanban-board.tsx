@@ -89,9 +89,6 @@ export default function KanbanBoard() {
     
     useEffect(() => {
         if (tasks && user) {
-            const now = new Date();
-            const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-
             tasks.forEach(task => {
                 const isOverdue = isPast(new Date(task.dueDate)) && !isSameDay(new Date(task.dueDate), startOfDay(new Date()));
                 if ((task.status === 'inprogress' || task.status === 'todo') && isOverdue) {
@@ -100,11 +97,6 @@ export default function KanbanBoard() {
                     }
                 } else if (task.status === 'overdue' && !isOverdue) {
                     handleStatusChange(task.id, 'todo');
-                }
-
-                // Auto-delete from done
-                if (task.status === 'done' && task.doneAt && task.doneAt.toDate() < oneHourAgo) {
-                    handleDeleteTask(task.id);
                 }
             });
         }
@@ -117,7 +109,15 @@ export default function KanbanBoard() {
             done: [],
             overdue: []
         };
+        
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+
         tasks?.forEach(task => {
+            if (task.status === 'done' && task.doneAt && task.doneAt.toDate() < oneHourAgo) {
+                // Don't add old "done" tasks to the visible column
+                return;
+            }
+
             if (groupedTasks[task.status]) {
                 groupedTasks[task.status].push(task);
             }

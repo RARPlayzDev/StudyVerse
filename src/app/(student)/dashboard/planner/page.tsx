@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
-import { collection, query, where } from "firebase/firestore";
+import { collection, query, where, Timestamp } from "firebase/firestore";
 import type { Task } from "@/lib/types";
 import { useMemo } from "react";
 import { subDays, eachDayOfInterval, format, isSameDay, startOfDay } from "date-fns";
@@ -24,13 +24,11 @@ export default function PlannerPage() {
 
     const tasksQuery = useMemoFirebase(() => {
         if (!user) return null;
-        const sevenDaysAgo = startOfDay(subDays(new Date(), 6));
+        const sevenDaysAgo = Timestamp.fromDate(startOfDay(subDays(new Date(), 6)));
         return query(
             collection(firestore, `users/${user.uid}/tasks`),
-            where('status', '==', 'done')
-            // Firestore doesn't support filtering by date ranges on different fields easily.
-            // We'll fetch recent completed tasks and filter client-side.
-            // In a real-world scenario with many tasks, this would be optimized.
+            where('status', '==', 'done'),
+            where('doneAt', '>=', sevenDaysAgo)
         );
     }, [firestore, user]);
 
@@ -44,8 +42,7 @@ export default function PlannerPage() {
 
         return last7Days.map(day => {
             const tasksOnDay = completedTasks?.filter(task => 
-                // Assuming dueDate is when it's marked done for this chart
-                isSameDay(new Date(task.dueDate), day)
+                task.doneAt && isSameDay(task.doneAt.toDate(), day)
             ).length || 0;
 
             return {
