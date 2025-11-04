@@ -41,7 +41,7 @@ service cloud.firestore {
     }
 
     match /users/{userId}/{subcollection}/{docId} {
-       allow read, write: if isOwner(userId);
+       allow get, list, write: if isOwner(userId);
     }
 
     match /notes/{noteId} {
