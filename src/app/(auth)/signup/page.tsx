@@ -21,12 +21,14 @@ import { User, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { Separator } from '@/components/ui/separator';
 import { signInWithGoogle } from '@/firebase/auth/google-signin';
+import { Loader2 } from 'lucide-react';
 
 export default function SignupPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
   const auth = useAuth();
@@ -34,16 +36,21 @@ export default function SignupPage() {
   const { user, isUserLoading } = useUser();
 
   useEffect(() => {
-    if (!isUserLoading && user) {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (isClient && !isUserLoading && user) {
       router.push('/dashboard');
     }
-  }, [user, isUserLoading, router]);
+  }, [user, isUserLoading, router, isClient]);
 
   const createUserProfile = async (user: User, name: string) => {
     const userRef = doc(firestore, 'users', user.uid);
     const newUser = {
       id: user.uid,
-      name: name || user.displayName || user.email?.split('@')[0] || 'Anonymous',
+      name:
+        name || user.displayName || user.email?.split('@')[0] || 'Anonymous',
       email: user.email,
       role: 'student',
       joinDate: new Date().toISOString(),
@@ -81,10 +88,28 @@ export default function SignupPage() {
       });
   };
 
-  if (isUserLoading || (!isUserLoading && user)) {
+  const handleGoogleSignIn = () => {
+    signInWithGoogle(auth, firestore)
+      .then(() => {
+        toast({
+          title: 'Signed up with Google',
+          description: 'Welcome to StudyVerse!',
+        });
+        // The useEffect will handle redirect
+      })
+      .catch((error) => {
+        toast({
+          title: 'Google Sign-Up Failed',
+          description: error.message,
+          variant: 'destructive',
+        });
+      });
+  };
+
+  if (!isClient || isUserLoading || user) {
     return (
-       <div className="flex h-screen w-full items-center justify-center">
-        <p>Loading...</p>
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
   }
@@ -96,7 +121,7 @@ export default function SignupPage() {
           <div className="mb-4 flex justify-center">
             <Logo />
           </div>
-          <CardTitle className="text-2xl">Create an Account</CardTitle>
+          <CardTitle className="text-3xl font-bold">Create an Account</CardTitle>
           <CardDescription>
             Join the StudyVerse and start learning smarter.
           </CardDescription>
@@ -138,7 +163,7 @@ export default function SignupPage() {
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
-               <div className="grid gap-2">
+              <div className="grid gap-2">
                 <Label htmlFor="confirm-password">Confirm Password</Label>
                 <Input
                   id="confirm-password"
@@ -154,15 +179,19 @@ export default function SignupPage() {
               </Button>
             </div>
           </form>
-           <div className="my-6 flex items-center">
+          <div className="my-6 flex items-center">
             <Separator className="flex-1" />
             <span className="mx-4 text-xs text-muted-foreground">
               OR SIGN UP WITH
             </span>
             <Separator className="flex-1" />
           </div>
-          <Button variant="outline" className="w-full" onClick={() => signInWithGoogle(auth, firestore)}>
-             <svg
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={handleGoogleSignIn}
+          >
+            <svg
               className="mr-2 h-4 w-4"
               aria-hidden="true"
               focusable="false"
@@ -179,10 +208,11 @@ export default function SignupPage() {
             </svg>
             Google
           </Button>
+
           <div className="mt-6 text-center text-sm">
             Already have an account?{' '}
             <Link href="/login" className="underline text-primary">
-              Login
+              Sign In
             </Link>
           </div>
         </CardContent>

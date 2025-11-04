@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -17,15 +16,15 @@ import Logo from '@/components/common/logo';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, useFirestore, useUser } from '@/firebase';
-import {
-  signInWithEmailAndPassword,
-} from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { Separator } from '@/components/ui/separator';
 import { signInWithGoogle } from '@/firebase/auth/google-signin';
+import { Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
   const auth = useAuth();
@@ -33,10 +32,14 @@ export default function LoginPage() {
   const { user, isUserLoading } = useUser();
 
   useEffect(() => {
-    if (!isUserLoading && user) {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (isClient && !isUserLoading && user) {
       router.push('/dashboard');
     }
-  }, [user, isUserLoading, router]);
+  }, [user, isUserLoading, router, isClient]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -46,7 +49,6 @@ export default function LoginPage() {
           title: 'Login Successful',
           description: 'Welcome back! Redirecting you now...',
         });
-        // The useEffect will handle the redirect.
       })
       .catch((error) => {
         let description = 'An unexpected error occurred. Please try again.';
@@ -71,10 +73,27 @@ export default function LoginPage() {
       });
   };
 
-  if (isUserLoading || (!isUserLoading && user)) {
+  const handleGoogleSignIn = () => {
+    signInWithGoogle(auth, firestore)
+      .then(() => {
+        toast({
+          title: 'Signed in with Google',
+          description: 'Welcome to StudyVerse!',
+        });
+      })
+      .catch((error) => {
+        toast({
+          title: 'Google Sign-In Failed',
+          description: error.message,
+          variant: 'destructive',
+        });
+      });
+  };
+
+  if (!isClient || isUserLoading || user) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
-        <p>Loading...</p>
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
   }
@@ -86,7 +105,7 @@ export default function LoginPage() {
           <div className="mb-4 flex justify-center">
             <Logo />
           </div>
-          <CardTitle className="text-2xl">Welcome Back</CardTitle>
+          <CardTitle className="text-3xl font-bold">Welcome Back</CardTitle>
           <CardDescription>
             Sign in to continue to your StudyVerse.
           </CardDescription>
@@ -137,7 +156,11 @@ export default function LoginPage() {
             </span>
             <Separator className="flex-1" />
           </div>
-          <Button variant="outline" className="w-full" onClick={() => signInWithGoogle(auth, firestore)}>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={handleGoogleSignIn}
+          >
             <svg
               className="mr-2 h-4 w-4"
               aria-hidden="true"
