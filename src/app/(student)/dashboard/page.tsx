@@ -98,7 +98,7 @@ export default function Dashboard() {
             </p>
           </CardContent>
         </Card>
-         <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+         <Card className="bg-card/50 backdrop-blur-sm border-border/50 opacity-50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Planner
@@ -106,9 +106,9 @@ export default function Dashboard() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">New!</div>
+            <div className="text-2xl font-bold">Removed</div>
             <p className="text-xs text-muted-foreground">
-              <Link href="/dashboard/planner" className="hover:underline">Start organizing your tasks</Link>
+              This feature has been temporarily disabled.
             </p>
           </CardContent>
         </Card>

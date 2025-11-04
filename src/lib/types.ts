@@ -56,13 +56,3 @@ export type Message = {
   text: string;
   timestamp: any;
 };
-
-export type Task = {
-  id: string;
-  userId: string;
-  title: string;
-  status: 'todo' | 'done';
-  createdAt: Timestamp;
-  completedAt: Timestamp | null;
-  subject?: string;
-};
