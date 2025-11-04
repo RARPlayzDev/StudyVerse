@@ -28,10 +28,9 @@ import { useAuth, useDoc, useFirestore, useUser, useMemoFirebase } from '@/fireb
 import { doc, updateDoc } from 'firebase/firestore';
 import type { User as UserType } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Moon, Sun } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { updateProfile, updatePassword, deleteUser } from 'firebase/auth';
-import { useTheme } from 'next-themes';
 import { Badge } from '@/components/ui/badge';
 import DeleteAccountDialog from '@/components/settings/delete-account-dialog';
 
@@ -60,7 +59,6 @@ export default function SettingsPage() {
   const [isProfileSaving, setProfileSaving] = useState(false);
   const [isPasswordSaving, setPasswordSaving] = useState(false);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const { setTheme } = useTheme();
 
   const userDocRef = useMemoFirebase(() => {
     if (!user) return null;
@@ -214,15 +212,8 @@ export default function SettingsPage() {
                 <CardDescription>Customise the look and feel of your StudyVerse.</CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="flex items-center gap-4">
-                  <Button variant="outline" onClick={() => setTheme('light')}>
-                    <Sun className="mr-2 h-4 w-4" />
-                    Light
-                  </Button>
-                  <Button variant="outline" onClick={() => setTheme('dark')}>
-                    <Moon className="mr-2 h-4 w-4" />
-                    Dark
-                  </Button>
+                 <div className="text-muted-foreground">
+                    This feature is under construction. More themes coming soon!
                 </div>
             </CardContent>
         </Card>

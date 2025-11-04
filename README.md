@@ -4,59 +4,93 @@
 
 ---
 
-## ✨ Core Features (Version 1.0)
-
-- **👤 Secure Authentication:** Seamless Firebase Auth with Google sign-in.  
-- **🧠 AI-Powered Note Summarization:** Uses Google Genkit to generate concise summaries from long notes.  
-- **⏳ Pomodoro Focus Timer:** Customizable focus timer with automatic session logging.  
-- **📊 Weekly Analytics Dashboard:** Visual insights into productivity and focus patterns.  
-- **🎵 Integrated Focus Music:** Built-in YouTube Lofi player for distraction-free studying.
+## 📖 Overview  
+**StudyVerse** is a modern, all-in-one productivity platform built to redefine how students learn, plan, and stay organized.  
+Powered by **Firebase**, **Google Genkit**, and **Next.js**, it brings focus, automation, and analytics together in one intelligent academic ecosystem.  
+Built with **Firebase Studio** and **Prototyper**, StudyVerse aims to become the ultimate AI companion for every student’s academic journey.
 
 ---
 
-## 🚀 Technology Stack
+## 🎯 Why StudyVerse?
+
+- 🧠 **Learn Smarter** — AI-powered note summarization using Google Genkit.  
+- ⏳ **Focus Better** — Pomodoro timer with session tracking and lofi YouTube music integration.  
+- 📊 **Track Progress** — Weekly analytics dashboard powered by Recharts.  
+- 🔐 **Stay Secure** — Firebase Authentication with Google sign-in and data protection.  
+- 🧮 **Manage Smarter** — Admin dashboard for analytics, user tracking, and usage metrics.  
+- 🎨 **Look Stunning** — Minimal, modern UI powered by shadcn/ui and Tailwind CSS.
+
+---
+
+## ✨ Features
+
+### 🔐 Authentication & Security
+- Secure Firebase Auth with Google sign-in  
+- Real-time session management  
+- Firestore-based data sync for personalized dashboards  
+
+### 🧠 AI-Powered Note Summarization
+- Summarize lengthy study notes using Google Genkit  
+- Context-aware content compression  
+- Instant generation of key takeaways and insights  
+
+### ⏳ Pomodoro Focus Mode
+- Customizable timer intervals (15, 25, 45 minutes)  
+- Task tagging per session  
+- Integrated YouTube Lofi player for focus  
+- Automatic logging of completed sessions  
+
+### 📊 Dashboard & Analytics
+- Visual charts for focus hours and study streaks  
+- Task completion ratio visualization  
+- Session-based insights using Recharts  
+
+### 🎵 Integrated Focus Music
+- Embedded YouTube player (Lofi Girl and curated playlists)  
+- Play/Pause sync with focus timer  
+- “Coming Soon” Spotify integration  
+
+---
+
+## 🧩 Tech Stack
 
 | Framework | Language | Backend | AI | Hosting | Styling | UI | Charts |
 |------------|-----------|----------|----|----------|----------|------|---------|
 | ![Next.js](https://skillicons.dev/icons?i=nextjs) | ![TypeScript](https://skillicons.dev/icons?i=ts) | ![Firebase](https://skillicons.dev/icons?i=firebase) | ![Google Cloud](https://skillicons.dev/icons?i=googlecloud) | ![Vercel](https://skillicons.dev/icons?i=vercel) | ![TailwindCSS](https://skillicons.dev/icons?i=tailwind) | shadcn/ui | Recharts |
 
-> 🧩 **Developed using Firebase Studio and Prototyper** for rapid UI design and real-time integration.
+> 🧩 **Developed using Firebase Studio and Prototyper** for rapid prototyping and real-time integration.
 
 ---
 
-## 🔮 Future Roadmap
+## 🚀 Roadmap to Upcoming Features
 
-### **Version 2.0 — The Intelligent Planner**
-*The goal: To not just list tasks, but understand them.*
-
-- 🧩 **Interactive Drag-and-Drop Planner**  
-- ⚙️ **AI Task Breakdown & Smart Time Estimation**  
-- 🧠 **Two-Way Google Calendar Sync**  
-- 🧮 **Admin Dashboard** for activity and usage management  
+### **v2.0 — The AI-Powered Planner**
+- 🧩 Public Collab Rooms  
+- ⚙️ AI task breakdown & smart time estimation  
+- 🧠 Google Calendar sync  
+- 🧮 Admin dashboard with advanced analytics  
 
 ---
 
-### **Version 3.0 — The Proactive AI Mentor**
-*The goal: To move from a tool to a tutor.*
-
-- 💬 **Conversational AI Assistant** for subject help  
-- 📆 **AI-Generated Study Plans** based on performance and deadlines  
-- 🧾 **AI Flashcards & Quizzing System**  
-- 🎯 **Adaptive Learning Style Personalization**
+### **v3.0 — The Proactive AI Mentor**
+- 💬 Conversational AI
+- 📆 AI-generated study plans & schedules  
+- 🧾 Smart flashcards & quizzes  
+- 🎯 Personalized learning style adaptation  
 
 ---
 
-### 🚧 **More Versions Coming Soon...**
-> Versions 4.0 and beyond are currently in development and will expand StudyVerse into a collaborative, gamified ecosystem.
+### **Future Versions**
+> Versions 4.0 and beyond will introduce collaboration rooms updates, gamification, mobile apps, and social study communities.
 
 ---
 
 ## ⚖️ License & Rights
 © 2025 **StudyVerse Team** — All rights reserved.  
-This project is **copyright-protected.**  
+This project is **copyright-protected**.  
 No use, distribution, or modification is allowed without explicit permission.
 
 ---
 
-🔗 **[Live Preview](https://study-verse-vert.vercel.app/)**  
-Hosted with on **Vercel**
+🔗 [**Live Preview — StudyVerse**](https://study-verse-vert.vercel.app/)  
+Hosted with ❤️ on **Vercel**
