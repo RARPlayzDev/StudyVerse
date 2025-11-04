@@ -16,7 +16,7 @@ const initialMessage: Message = {
     id: 'm0',
     senderId: 'ai-mentor',
     senderName: 'AI Mentor',
-    senderAvatar: 'https://picsum.photos/seed/ai-mentor/100/100',
+    senderAvatar: 'https://picsum.photos/seed/ai-abstract/100/100',
     text: "Hello! I'm your AI Study Mentor. How can I help you focus, plan, or learn smarter today?",
     timestamp: new Date(),
 };
@@ -55,7 +55,7 @@ export default function MentorPage() {
             id: `m${messages.length + 1}`,
             senderId: user!.uid,
             senderName: 'You',
-            senderAvatar: user?.photoURL || 'https://picsum.photos/seed/user1/100/100',
+            senderAvatar: user?.photoURL || 'https://picsum.photos/seed/user-default/100/100',
             text,
             timestamp: new Date(),
         };
@@ -68,7 +68,7 @@ export default function MentorPage() {
                 id: `m${messages.length + 2}`,
                 senderId: 'ai-mentor',
                 senderName: 'AI Mentor',
-                senderAvatar: 'https://picsum.photos/seed/ai-mentor/100/100',
+                senderAvatar: 'https://picsum.photos/seed/ai-abstract/100/100',
                 text: result.advice,
                 timestamp: new Date(),
             };
@@ -79,7 +79,7 @@ export default function MentorPage() {
                  id: `m${messages.length + 2}`,
                 senderId: 'ai-mentor',
                 senderName: 'AI Mentor',
-                senderAvatar: 'https://picsum.photos/seed/ai-mentor/100/100',
+                senderAvatar: 'https://picsum.photos/seed/ai-abstract/100/100',
                 text: `I'm sorry, I encountered an issue. ${error.message || "Please try rephrasing your question or try again in a moment."}`,
                 timestamp: new Date(),
             };
