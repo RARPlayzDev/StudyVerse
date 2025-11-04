@@ -46,8 +46,7 @@
         "role",
         "joinDate",
         "lastActive",
-        "banned"
-      ]
+        "banned"      ]
     },
     "FocusSession": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -84,6 +83,21 @@
         "date",
         "taskTag"
       ]
+    },
+    "Task": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Task",
+      "type": "object",
+      "description": "Represents a task in the planner.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the task." },
+        "userId": { "type": "string", "description": "The ID of the user who owns the task." },
+        "title": { "type": "string", "description": "The title or description of the task." },
+        "status": { "type": "string", "enum": ["todo", "done"], "description": "The current status of the task." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "The timestamp when the task was created." },
+        "completedAt": { "type": ["string", "null"], "format": "date-time", "description": "The timestamp when the task was completed." }
+      },
+      "required": ["id", "userId", "title", "status", "createdAt"]
     },
     "Note": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -346,6 +360,20 @@
               "name": "focusSessionId",
               "description": "The unique identifier for the focus session."
             }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/tasks/{taskId}",
+        "definition": {
+          "entityName": "Task",
+          "schema": {
+            "$ref": "#/backend/entities/Task"
+          },
+          "description": "Subcollection storing tasks for a specific user.",
+          "params": [
+            { "name": "userId", "description": "The unique identifier for the user." },
+            { "name": "taskId", "description": "The unique identifier for the task." }
           ]
         }
       },

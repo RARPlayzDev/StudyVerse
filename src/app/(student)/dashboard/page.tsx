@@ -1,4 +1,3 @@
-// Version 1.0 Final Push
 'use client';
 import Link from "next/link"
 import {
@@ -107,9 +106,9 @@ export default function Dashboard() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Coming Soon</div>
+            <div className="text-2xl font-bold">New!</div>
             <p className="text-xs text-muted-foreground">
-              A new planner experience is on the way.
+              <Link href="/dashboard/planner" className="hover:underline">Start organizing your tasks</Link>
             </p>
           </CardContent>
         </Card>

@@ -38,7 +38,6 @@ export type CollabRoom = {
   description: string;
   type: 'public' | 'private';
   createdBy: string;
-  // members array is removed
   inviteCode?: string;
 };
 
@@ -56,4 +55,13 @@ export type Message = {
   senderAvatar?: string;
   text: string;
   timestamp: any;
+};
+
+export type Task = {
+  id: string;
+  userId: string;
+  title: string;
+  status: 'todo' | 'done';
+  createdAt: Timestamp;
+  completedAt: Timestamp | null;
 };
