@@ -95,7 +95,8 @@
         "title": { "type": "string", "description": "The title or description of the task." },
         "status": { "type": "string", "enum": ["todo", "done"], "description": "The current status of the task." },
         "createdAt": { "type": "string", "format": "date-time", "description": "The timestamp when the task was created." },
-        "completedAt": { "type": ["string", "null"], "format": "date-time", "description": "The timestamp when the task was completed." }
+        "completedAt": { "type": ["string", "null"], "format": "date-time", "description": "The timestamp when the task was completed." },
+        "subject": { "type": "string", "description": "The academic subject of the task."}
       },
       "required": ["id", "userId", "title", "status", "createdAt"]
     },
@@ -343,6 +344,20 @@
           ]
         }
       },
+       {
+        "path": "/planner/{userId}/tasks/{taskId}",
+        "definition": {
+          "entityName": "Task",
+          "schema": {
+            "$ref": "#/backend/entities/Task"
+          },
+          "description": "Subcollection storing tasks for a specific user within the isolated planner collection.",
+          "params": [
+            { "name": "userId", "description": "The unique identifier for the user." },
+            { "name": "taskId", "description": "The unique identifier for the task." }
+          ]
+        }
+      },
       {
         "path": "/users/{userId}/focusSessions/{focusSessionId}",
         "definition": {
@@ -360,20 +375,6 @@
               "name": "focusSessionId",
               "description": "The unique identifier for the focus session."
             }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/tasks/{taskId}",
-        "definition": {
-          "entityName": "Task",
-          "schema": {
-            "$ref": "#/backend/entities/Task"
-          },
-          "description": "Subcollection storing tasks for a specific user.",
-          "params": [
-            { "name": "userId", "description": "The unique identifier for the user." },
-            { "name": "taskId", "description": "The unique identifier for the task." }
           ]
         }
       },

@@ -20,7 +20,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -40,6 +39,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 const taskSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters.'),
   status: z.enum(['todo', 'done']),
+  subject: z.string().optional(),
 });
 
 type TaskFormValues = z.infer<typeof taskSchema>;
@@ -61,6 +61,7 @@ export default function TaskDialog({ open, onOpenChange, task }: TaskDialogProps
     defaultValues: {
       title: '',
       status: 'todo',
+      subject: '',
     },
   });
 
@@ -69,11 +70,13 @@ export default function TaskDialog({ open, onOpenChange, task }: TaskDialogProps
       form.reset({
         title: task.title,
         status: task.status,
+        subject: task.subject || '',
       });
     } else {
       form.reset({
         title: '',
         status: 'todo',
+        subject: '',
       });
     }
   }, [task, open, form]);
@@ -82,13 +85,13 @@ export default function TaskDialog({ open, onOpenChange, task }: TaskDialogProps
     if (!user) return;
     setIsSaving(true);
     
-    const collectionRef = collection(firestore, `users/${user.uid}/tasks`);
+    const collectionRef = collection(firestore, `planner/${user.uid}/tasks`);
 
     try {
       if (task) {
         // Update existing task
         const taskRef = doc(collectionRef, task.id);
-        const updateData = {
+        const updateData: any = {
           ...values,
           completedAt: values.status === 'done' && task.status !== 'done' ? serverTimestamp() : task.completedAt || null,
         };
@@ -138,7 +141,7 @@ export default function TaskDialog({ open, onOpenChange, task }: TaskDialogProps
     if (!user || !task) return;
     setIsSaving(true);
     try {
-        const taskRef = doc(firestore, `users/${user.uid}/tasks`, task.id);
+        const taskRef = doc(firestore, `planner/${user.uid}/tasks`, task.id);
         await deleteDoc(taskRef).catch(err => {
             const permissionError = new FirestorePermissionError({
                 path: taskRef.path,
@@ -176,6 +179,19 @@ export default function TaskDialog({ open, onOpenChange, task }: TaskDialogProps
                   <FormLabel>Title</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., Read Chapter 5" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="subject"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Subject (Optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., Physics" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

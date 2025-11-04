@@ -3,7 +3,6 @@ import { useState, useMemo } from 'react';
 import {
   DragDropContext,
   DragEndEvent,
-  DragStartEvent,
 } from '@hello-pangea/dnd';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -30,12 +29,11 @@ export default function KanbanBoard() {
 
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [subjectFilter, setSubjectFilter] = useState<string>("all");
 
   const tasksQuery = useMemoFirebase(() => {
     if (!user) return null;
-    return query(collection(firestore, `users/${user.uid}/tasks`), orderBy('createdAt', 'desc'));
+    return query(collection(firestore, `planner/${user.uid}/tasks`), orderBy('createdAt', 'desc'));
   }, [user, firestore]);
 
   const { data: tasks, isLoading } = useCollection<Task>(tasksQuery);
@@ -50,17 +48,7 @@ export default function KanbanBoard() {
     setDialogOpen(true);
   };
 
-  const handleDragStart = (event: DragStartEvent) => {
-    const { draggableId } = event;
-    const task = tasks?.find(t => t.id === draggableId);
-    if (task) {
-      setActiveTask(task);
-    }
-  };
-
   const handleDragEnd = async (event: DragEndEvent) => {
-    setActiveTask(null);
-
     const { draggableId, destination } = event;
 
     if (!destination) return;
@@ -71,7 +59,7 @@ export default function KanbanBoard() {
     const originalTask = tasks?.find(t => t.id === activeId);
 
     if (originalTask && originalTask.status !== destinationId && user) {
-        const taskRef = doc(firestore, `users/${user.uid}/tasks`, activeId as string);
+        const taskRef = doc(firestore, `planner/${user.uid}/tasks`, activeId as string);
         const newStatus = destinationId as Status;
         
         const updateData: {status: Status, completedAt?: any} = { status: newStatus };
@@ -140,7 +128,6 @@ export default function KanbanBoard() {
       </div>
 
       <DragDropContext
-        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -65,7 +65,4 @@ export type Task = {
   createdAt: Timestamp;
   completedAt: Timestamp | null;
   subject?: string;
-  dueDate: string;
-  priority: 'low' | 'medium' | 'high';
-  startDate: string;
 };
