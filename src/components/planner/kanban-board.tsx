@@ -14,7 +14,7 @@ import { TaskDialog } from './task-dialog';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { cn } from '@/lib/utils';
-import { isPast, startOfDay, isSameDay } from 'date-fns';
+import { isPast, startOfDay, isSameDay, subDays } from 'date-fns';
 import { DragDropContext, Droppable, Draggable, OnDragEndResponder } from '@hello-pangea/dnd';
 
 type Column = {
@@ -98,6 +98,14 @@ export default function KanbanBoard() {
                 } else if (task.status === 'overdue' && !isOverdue) {
                     handleStatusChange(task.id, 'todo');
                 }
+
+                // Delete tasks that have been 'done' for more than 7 days
+                if (task.status === 'done' && task.doneAt) {
+                    const sevenDaysAgo = subDays(new Date(), 7);
+                    if (task.doneAt.toDate() < sevenDaysAgo) {
+                        handleDeleteTask(task.id);
+                    }
+                }
             });
         }
     }, [tasks, user]);
@@ -113,8 +121,9 @@ export default function KanbanBoard() {
         const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
 
         tasks?.forEach(task => {
+            // Filter "Done" tasks to only show those completed in the last hour
             if (task.status === 'done' && task.doneAt && task.doneAt.toDate() < oneHourAgo) {
-                // Don't add old "done" tasks to the visible column
+                // Don't add old "done" tasks to the visible column, but they remain for the graph
                 return;
             }
 
