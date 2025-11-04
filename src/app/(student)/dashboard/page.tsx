@@ -6,6 +6,7 @@ import {
   BookOpen,
   Timer,
   Users,
+  KanbanSquare
 } from "lucide-react"
 
 import {
@@ -33,7 +34,7 @@ import {
 import PageTitle from "@/components/common/page-title"
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, query, orderBy, limit, where } from "firebase/firestore"
-import type { Note as NoteType, CollabRoom } from "@/lib/types"
+import type { Note as NoteType, CollabRoom, Task } from "@/lib/types"
 
 export default function Dashboard() {
   const { user } = useUser();
@@ -50,9 +51,19 @@ export default function Dashboard() {
     // For now, it will return no rooms.
     return query(collection(firestore, 'collabRooms'), where('members', 'array-contains', user.uid));
   }, [firestore, user]);
+  
+  const tasksQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(
+        collection(firestore, 'users', user.uid, 'tasks'),
+        where('status', 'in', ['todo', 'inprogress'])
+    );
+  }, [firestore, user]);
 
   const { data: recentNotes, isLoading: notesLoading } = useCollection<NoteType>(notesQuery);
   const { data: activeRooms, isLoading: roomsLoading } = useCollection<CollabRoom>(roomsQuery);
+  const { data: activeTasks, isLoading: tasksLoading } = useCollection<Task>(tasksQuery);
+
 
   return (
     <>
@@ -98,17 +109,17 @@ export default function Dashboard() {
             </p>
           </CardContent>
         </Card>
-         <Card className="bg-card/50 backdrop-blur-sm border-border/50 opacity-50">
+         <Card className="bg-card/50 backdrop-blur-sm border-border/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Planner
+              Active Tasks
             </CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+            <KanbanSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Removed</div>
+            <div className="text-2xl font-bold">{tasksLoading ? '...' : activeTasks?.length ?? 0}</div>
             <p className="text-xs text-muted-foreground">
-              This feature has been temporarily disabled.
+               <Link href="/dashboard/planner" className="hover:underline">Go to Planner</Link>
             </p>
           </CardContent>
         </Card>
