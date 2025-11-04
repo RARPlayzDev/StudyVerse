@@ -64,4 +64,8 @@ export type Task = {
   status: 'todo' | 'done';
   createdAt: Timestamp;
   completedAt: Timestamp | null;
+  subject?: string;
+  dueDate: string;
+  priority: 'low' | 'medium' | 'high';
+  startDate: string;
 };
