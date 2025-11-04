@@ -59,4 +59,4 @@ No use, distribution, or modification is allowed without explicit permission.
 ---
 
 🔗 **[Live Preview](https://study-verse-vert.vercel.app/)**  
-Hosted with on **Vercel**
+Hosted on **Vercel**
