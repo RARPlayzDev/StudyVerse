@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Send } from 'lucide-react';
-import { FormEvent, useEffect, useRef } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useUser as useAuthUser } from '@/firebase';
 import { formatDistanceToNow } from 'date-fns';
@@ -19,6 +19,11 @@ type ChatInterfaceProps = {
 export default function ChatInterface({ messages, onSendMessage, isLoading }: ChatInterfaceProps) {
     const { user: currentUser } = useAuthUser();
     const scrollAreaRef = useRef<HTMLDivElement>(null);
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     const handleSendMessage = (e: FormEvent) => {
         e.preventDefault();
@@ -38,6 +43,9 @@ export default function ChatInterface({ messages, onSendMessage, isLoading }: Ch
     }, [messages, isLoading]);
 
     const getFormattedTimestamp = (timestamp: any) => {
+        if (!isMounted) {
+            return null; // Don't render timestamp on the server or during initial client render
+        }
         if (!timestamp) return 'sending...';
         
         let date: Date;
