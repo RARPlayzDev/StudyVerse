@@ -205,19 +205,6 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Theme Settings */}
-        <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-            <CardHeader>
-                <CardTitle>Display Theme</CardTitle>
-                <CardDescription>Customise the look and feel of your StudyVerse.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                 <div className="text-muted-foreground">
-                    This feature is under construction. More themes coming soon!
-                </div>
-            </CardContent>
-        </Card>
-
         {/* Account Settings */}
         <Card className="bg-card/50 backdrop-blur-sm border-border/50">
           <CardHeader>
