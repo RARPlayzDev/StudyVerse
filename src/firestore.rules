@@ -29,14 +29,6 @@ service cloud.firestore {
       return request.auth != null && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
     
-    match /users/{userId} {
-      allow read: if request.auth != null;
-      allow list: if false;
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
-    }
-
     // This recursive wildcard rule grants the owner full access to all their subcollections.
     match /users/{userId}/{subcollection=**} {
        allow read, write: if isOwner(userId);
