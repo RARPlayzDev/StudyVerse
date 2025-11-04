@@ -1,0 +1,507 @@
+// Version 1.0 Final Push
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user in the StudySync application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "name": {
+          "type": "string",
+          "description": "The user's display name."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address.",
+          "format": "email"
+        },
+        "role": {
+          "type": "string",
+          "description": "The user's role (student or admin)."
+        },
+        "joinDate": {
+          "type": "string",
+          "description": "The date and time the user joined the application.",
+          "format": "date-time"
+        },
+        "lastActive": {
+          "type": "string",
+          "description": "The date and time the user was last active.",
+          "format": "date-time"
+        },
+        "banned": {
+          "type": "boolean",
+          "description": "Indicates whether the user is banned."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email",
+        "role",
+        "joinDate",
+        "lastActive",
+        "banned"      ]
+    },
+    "FocusSession": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FocusSession",
+      "type": "object",
+      "description": "Represents a focus session recorded by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the focus session."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N FocusSession)"
+        },
+        "duration": {
+          "type": "number",
+          "description": "The duration of the focus session in minutes."
+        },
+        "date": {
+          "type": "string",
+          "description": "The date of the focus session.",
+          "format": "date-time"
+        },
+        "taskTag": {
+          "type": "string",
+          "description": "A tag associated with the task performed during the focus session."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "duration",
+        "date",
+        "taskTag"
+      ]
+    },
+    "Note": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Note",
+      "type": "object",
+      "description": "Represents a note or PDF document in the notes hub.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the note."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Note)"
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the note."
+        },
+        "subject": {
+          "type": "string",
+          "description": "The subject of the note."
+        },
+        "uploader": {
+          "type": "string",
+          "description": "The user who uploaded the note."
+        },
+        "date": {
+          "type": "string",
+          "description": "The date the note was uploaded.",
+          "format": "date-time"
+        },
+        "downloads": {
+          "type": "number",
+          "description": "The number of times the note has been downloaded."
+        },
+        "fileUrl": {
+          "type": "string",
+          "description": "The URL of the file in Firebase Storage.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "subject",
+        "uploader",
+        "date",
+        "downloads",
+        "fileUrl"
+      ]
+    },
+    "CollabRoom": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "CollabRoom",
+      "type": "object",
+      "description": "Represents a collaboration chat room.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the collaboration room."
+        },
+        "topic": {
+          "type": "string",
+          "description": "The topic of the study room."
+        },
+        "description": {
+            "type": "string",
+            "description": "A short description of the room's purpose."
+        },
+        "type": {
+            "type": "string",
+            "enum": ["public", "private"],
+            "description": "The visibility and access type of the room."
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N CollabRoom). The user ID of the room creator."
+        },
+        "inviteCode": {
+            "type": "string",
+            "description": "A unique, short code for inviting users to a private room."
+        }
+      },
+      "required": [
+        "id",
+        "topic",
+        "description",
+        "type",
+        "createdBy"
+      ]
+    },
+    "CollabRoomMember": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "CollabRoomMember",
+      "type": "object",
+      "description": "Represents a member in a collaboration room. The document ID is the user's UID.",
+      "properties": {
+        "joinedAt": {
+          "type": "string",
+          "description": "The timestamp when the user joined the room.",
+          "format": "date-time"
+        },
+        "userId": {
+            "type": "string",
+            "description": "The UID of the user who is the member."
+        }
+      },
+      "required": ["joinedAt", "userId"]
+    },
+    "ChatMessage": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ChatMessage",
+      "type": "object",
+      "description": "Represents a message within a collaboration chat room.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the chat message."
+        },
+        "roomId": {
+          "type": "string",
+          "description": "Reference to CollabRoom. (Relationship: CollabRoom 1:N ChatMessage). The ID of the collaboration room the message belongs to."
+        },
+        "senderId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N ChatMessage).  The user ID of the message sender."
+        },
+        "senderName": {
+            "type": "string",
+            "description": "The display name of the sender."
+        },
+        "senderAvatar": {
+            "type": "string",
+            "description": "The avatar URL of the sender."
+        },
+        "text": {
+          "type": "string",
+          "description": "The text content of the message."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "The date and time the message was sent.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "roomId",
+        "senderId",
+        "senderName",
+        "text",
+        "timestamp"
+      ]
+    },
+    "MentorChat": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "MentorChat",
+      "type": "object",
+      "description": "Represents a chat session with the AI study mentor.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the mentor chat session."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N MentorChat). The user ID of the user who initiated the chat."
+        },
+        "messages": {
+          "type": "array",
+          "description": "An array of messages in the chat session.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "messages"
+      ]
+    },
+    "AdminLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AdminLog",
+      "type": "object",
+      "description": "Represents a log entry for an admin action.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the admin log entry."
+        },
+        "adminId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N AdminLog). The user ID of the admin who performed the action."
+        },
+        "actionType": {
+          "type": "string",
+          "description": "The type of admin action performed (e.g., promote user, ban user)."
+        },
+        "target": {
+          "type": "string",
+          "description": "The target of the admin action (e.g., the user ID of the user being promoted)."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "The date and time the admin action was performed.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "adminId",
+        "actionType",
+        "target",
+        "timestamp"
+      ]
+    },
+     "Task": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Task",
+      "type": "object",
+      "description": "Represents a single task in the study planner.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the task." },
+        "userId": { "type": "string", "description": "The user who owns the task." },
+        "title": { "type": "string", "description": "The title of the task." },
+        "subject": { "type": "string", "description": "The academic subject of the task." },
+        "startDate": { "type": "string", "format": "date", "description": "When the task was started." },
+        "dueDate": { "type": "string", "format": "date", "description": "When the task is due." },
+        "priority": { "type": "string", "enum": ["low", "medium", "high"] },
+        "status": { "type": "string", "enum": ["todo", "inprogress", "done", "overdue"] }
+      },
+      "required": ["id", "userId", "title", "subject", "dueDate", "priority", "status"]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile information. Includes user ID as document ID.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+       {
+        "path": "/users/{userId}/tasks/{taskId}",
+        "definition": {
+          "entityName": "Task",
+          "schema": { "$ref": "#/backend/entities/Task" },
+          "description": "Stores tasks as a subcollection under each user.",
+          "params": [
+            { "name": "userId", "description": "The unique identifier for the user." },
+            { "name": "taskId", "description": "The unique identifier for the task." }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/focusSessions/{focusSessionId}",
+        "definition": {
+          "entityName": "FocusSession",
+          "schema": {
+            "$ref": "#/backend/entities/FocusSession"
+          },
+          "description": "Stores focus session data for each user. Includes user ID and focus session ID in the path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "focusSessionId",
+              "description": "The unique identifier for the focus session."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/notes/{noteId}",
+        "definition": {
+          "entityName": "Note",
+          "schema": {
+            "$ref": "#/backend/entities/Note"
+          },
+          "description": "Stores note data in a global collection. Includes note ID as document ID.",
+          "params": [
+            {
+              "name": "noteId",
+              "description": "The unique identifier for the note."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/collabRooms/{roomId}",
+        "definition": {
+          "entityName": "CollabRoom",
+          "schema": {
+            "$ref": "#/backend/entities/CollabRoom"
+          },
+          "description": "Stores collaboration room data. Includes room ID as document ID. Stores members array for authorization.",
+          "params": [
+            {
+              "name": "roomId",
+              "description": "The unique identifier for the collaboration room."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/collabRooms/{roomId}/members/{userId}",
+        "definition": {
+          "entityName": "CollabRoomMember",
+          "schema": {
+            "$ref": "#/backend/entities/CollabRoomMember"
+          },
+          "description": "Subcollection to store members of a room. The document ID is the user's UID, allowing for easy security rule checks.",
+          "params": [
+            {
+              "name": "roomId",
+              "description": "The unique identifier for the collaboration room."
+            },
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user who is a member."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/collabRooms/{roomId}/messages/{messageId}",
+        "definition": {
+          "entityName": "ChatMessage",
+          "schema": {
+            "$ref": "#/backend/entities/ChatMessage"
+          },
+          "description": "Stores chat messages within a collaboration room. Includes room ID and message ID in the path. This subcollection stores denormalized 'members' from the parent `collabRooms/{roomId}` document for authorization independence.",
+          "params": [
+            {
+              "name": "roomId",
+              "description": "The unique identifier for the collaboration room."
+            },
+            {
+              "name": "messageId",
+              "description": "The unique identifier for the chat message."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/mentorChats/{mentorChatId}",
+        "definition": {
+          "entityName": "MentorChat",
+          "schema": {
+            "$ref": "#/backend/entities/MentorChat"
+          },
+          "description": "Stores mentor chat data for each user. Includes user ID and mentor chat ID in the path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "mentorChatId",
+              "description": "The unique identifier for the mentor chat session."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/adminLogs/{adminLogId}",
+        "definition": {
+          "entityName": "AdminLog",
+          "schema": {
+            "$ref": "#/backend/entities/AdminLog"
+          },
+          "description": "Stores admin log entries. Includes log ID as document ID.",
+          "params": [
+            {
+              "name": "adminLogId",
+              "description": "The unique identifier for the admin log entry."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "roles_admin",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Documents in this collection signify admin roles. Existence of the document grants admin privileges. Content is not relevant.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to ensure authorization independence, clarity, and scalability, aligning with the core principles outlined. It leverages path-based ownership for private user data and membership maps for collaborative data. Authorization independence is achieved through denormalization. Specifically, the `members` array from the `CollabRoom` is duplicated in the `ChatMessage` documents to eliminate the need for `get()` calls in security rules, allowing messages to be created atomically. Segregation is used to ensure that all documents in a collection share the same security posture, which simplifies security rules. The structure efficiently supports required QAPs by using path-based ownership for user-specific data like `FocusSession`, `Task`, and `Note`, and dedicated collections with membership maps for collaborative resources like `CollabRoom` and its `ChatMessage`. Global roles are managed using the presence of documents in dedicated collections (e.g., `roles_admin/{uid}`). This entire structure minimizes complexity and enhances debuggability."
+  }
+}

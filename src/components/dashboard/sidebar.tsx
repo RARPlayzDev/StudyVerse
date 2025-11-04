@@ -25,7 +25,7 @@ import { useAuth } from '@/firebase';
 const mainNavItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/dashboard/focus', icon: Focus, label: 'Focus' },
-  { href: '/dashboard/planner', icon: KanbanSquare, label: 'Planner (Disabled)' },
+  { href: '/dashboard/planner', icon: KanbanSquare, label: 'Planner' },
   { href: '/dashboard/notes', icon: NotebookText, label: 'Notes Hub' },
   { href: '/dashboard/collab', icon: Users, label: 'Collab Space' },
   { href: '/dashboard/mentor', icon: BrainCircuit, label: 'AI Mentor' },
@@ -46,26 +46,6 @@ export default function StudentSidebar() {
   const renderNavItem = (item: { href: string; icon: React.ElementType; label: string }) => {
     const isActive = pathname === item.href;
     const Icon = item.icon;
-    const isPlanner = item.href === '/dashboard/planner';
-
-    if (isPlanner) {
-      return (
-        <Tooltip key={item.label}>
-          <TooltipTrigger asChild>
-            <div
-              className={cn(
-                'flex h-10 w-10 items-center justify-center rounded-lg transition-colors md:h-9 md:w-9',
-                'text-muted-foreground opacity-50 cursor-not-allowed'
-              )}
-            >
-              <Icon className="h-5 w-5" />
-              <span className="sr-only">{item.label}</span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent side="right">{item.label}</TooltipContent>
-        </Tooltip>
-      );
-    }
     
     return (
       <Tooltip key={item.label}>

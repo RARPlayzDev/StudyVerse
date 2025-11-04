@@ -21,7 +21,6 @@ service cloud.firestore {
     
     // This single recursive wildcard rule grants a user full read/write access 
     // to their own document and ALL nested subcollections (tasks, focusSessions, etc.).
-    // This is the definitive fix for the "list" permission errors.
     match /users/{userId}/{documents=**} {
        allow read, write: if isOwner(userId);
     }

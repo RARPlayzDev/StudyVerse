@@ -56,3 +56,14 @@ export type Message = {
   text: string;
   timestamp: any;
 };
+
+export type Task = {
+  id: string;
+  userId: string;
+  title: string;
+  subject: string;
+  startDate: string;
+  dueDate: string;
+  priority: 'low' | 'medium' | 'high';
+  status: 'todo' | 'inprogress' | 'done' | 'overdue';
+}
