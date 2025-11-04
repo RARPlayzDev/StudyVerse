@@ -76,8 +76,8 @@ export function TaskDialog({ isOpen, setIsOpen, task, onSave }: TaskDialogProps)
     onSave({
         id: task?.id,
         ...values,
-        startDate: values.startDate.toISOString().split('T')[0],
-        dueDate: values.dueDate.toISOString().split('T')[0],
+        startDate: values.startDate.toISOString(), // Keep as full ISO string for consistency
+        dueDate: values.dueDate.toISOString(),
     });
     setIsOpen(false);
   };
@@ -92,7 +92,7 @@ export function TaskDialog({ isOpen, setIsOpen, task, onSave }: TaskDialogProps)
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
             <FormField
               control={form.control}
               name="title"

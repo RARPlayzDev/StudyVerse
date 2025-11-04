@@ -24,6 +24,7 @@ export default function PlannerPage() {
 
     const tasksQuery = useMemoFirebase(() => {
         if (!user) return null;
+        // Query for tasks completed in the last 7 days to populate the chart.
         const sevenDaysAgo = Timestamp.fromDate(startOfDay(subDays(new Date(), 6)));
         return query(
             collection(firestore, `users/${user.uid}/tasks`),
@@ -32,7 +33,7 @@ export default function PlannerPage() {
         );
     }, [firestore, user]);
 
-    const { data: completedTasks, isLoading } = useCollection<Task>(tasksQuery);
+    const { data: completedTasks } = useCollection<Task>(tasksQuery);
 
     const taskCompletionData = useMemo(() => {
         const last7Days = eachDayOfInterval({

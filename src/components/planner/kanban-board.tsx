@@ -1,9 +1,8 @@
 // Version 1.0 Final Push
-
 'use client';
 import { useMemo, useState, useEffect } from 'react';
 import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
-import { collection, doc, addDoc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
+import { collection, doc, addDoc, updateDoc, deleteDoc, Timestamp, query } from 'firebase/firestore';
 import type { Task } from "@/lib/types";
 import { Card, CardContent } from "../ui/card";
 import { Badge } from "../ui/badge";
@@ -14,7 +13,7 @@ import { TaskDialog } from './task-dialog';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { cn } from '@/lib/utils';
-import { isPast, startOfDay, isSameDay, subDays } from 'date-fns';
+import { isPast, startOfDay, isSameDay } from 'date-fns';
 import { DragDropContext, Droppable, Draggable, OnDragEndResponder } from '@hello-pangea/dnd';
 
 type Column = {
@@ -68,7 +67,7 @@ function TaskCard({ task, onEdit, onDelete, onStatusChange }: { task: Task; onEd
                     <span>{task.subject}</span>
                     <Badge variant={task.priority === 'high' ? 'destructive' : task.priority === 'medium' ? 'secondary' : 'outline'} className="capitalize">{task.priority}</Badge>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">Due: {task.dueDate}</p>
+                <p className="text-xs text-muted-foreground mt-2">Due: {new Date(task.dueDate).toLocaleDateString()}</p>
             </CardContent>
         </Card>
     );
@@ -82,11 +81,17 @@ export default function KanbanBoard() {
 
     const tasksQuery = useMemoFirebase(() => {
         if (!user) return null;
-        return collection(firestore, `users/${user.uid}/tasks`);
+        return query(collection(firestore, `users/${user.uid}/tasks`));
     }, [firestore, user]);
 
-    const { data: tasks, isLoading } = useCollection<Task>(tasksQuery);
+    const { data: serverTasks, isLoading } = useCollection<Task>(tasksQuery);
+    const [tasks, setTasks] = useState<Task[] | null>(serverTasks);
+
+    useEffect(() => {
+        setTasks(serverTasks);
+    }, [serverTasks]);
     
+    // Auto-update task status to overdue
     useEffect(() => {
         if (tasks && user) {
             tasks.forEach(task => {
@@ -96,6 +101,7 @@ export default function KanbanBoard() {
                         handleStatusChange(task.id, 'overdue');
                     }
                 } else if (task.status === 'overdue' && !isOverdue) {
+                    // If a task was overdue but its date was changed to be in the future
                     handleStatusChange(task.id, 'todo');
                 }
             });
@@ -115,6 +121,12 @@ export default function KanbanBoard() {
                 groupedTasks[task.status].push(task);
             }
         });
+
+        // Sort tasks within each column (optional, e.g., by priority)
+        for (const status in groupedTasks) {
+            groupedTasks[status as Task['status']].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+        }
+
         return groupedTasks;
     }, [tasks]);
 
@@ -166,6 +178,7 @@ export default function KanbanBoard() {
                 errorEmitter.emit('permission-error', permissionError);
             });
         }
+        setDialogOpen(false);
     };
 
     const handleStatusChange = (taskId: string, newStatus: Task['status']) => {
@@ -176,8 +189,7 @@ export default function KanbanBoard() {
 
         if (newStatus === 'done') {
             updateData.doneAt = Timestamp.now();
-        } else {
-            // If moving out of done, we can clear the timestamp
+        } else if (newStatus === 'todo' || newStatus === 'inprogress') {
             updateData.doneAt = null;
         }
 
@@ -210,10 +222,26 @@ export default function KanbanBoard() {
             return;
         }
 
+        // If dropped in the same place
         if (source.droppableId === destination.droppableId && source.index === destination.index) {
             return;
         }
         
+        // Optimistic UI Update
+        if (tasks) {
+            const sourceCol = tasksByStatus[source.droppableId as Task['status']];
+            const destCol = tasksByStatus[destination.droppableId as Task['status']];
+            const [movedTask] = sourceCol.splice(source.index, 1);
+            
+            // Update status on the moved task object
+            movedTask.status = destination.droppableId as Task['status'];
+            
+            destCol.splice(destination.index, 0, movedTask);
+
+            const newTasks = Object.values(tasksByStatus).flat();
+            setTasks(newTasks);
+        }
+
         const newStatus = destination.droppableId as Task['status'];
         handleStatusChange(draggableId, newStatus);
     };
@@ -259,7 +287,7 @@ export default function KanbanBoard() {
                                             )}
                                         >
                                             <CardContent className="p-0">
-                                                {isLoading && <p>Loading...</p>}
+                                                {isLoading && <p className="text-muted-foreground p-4 text-center">Loading tasks...</p>}
                                                 {!isLoading && columnTasks?.map((task, index) => 
                                                     <Draggable key={task.id} draggableId={task.id} index={index}>
                                                         {(provided, snapshot) => (
