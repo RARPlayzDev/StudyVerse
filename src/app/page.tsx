@@ -1,11 +1,14 @@
-// Version 1.0 Final Push
 
+'use client';
+
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BrainCircuit, Focus, Kanban, NotebookText, Users, ArrowRight, UserPlus, FileSignature, Goal } from "lucide-react";
 import Link from "next/link";
 import Logo from "@/components/common/logo";
+import Preloader from "@/components/common/preloader";
 
 const features = [
   {
@@ -76,6 +79,20 @@ const testimonials = [
 
 
 export default function Home() {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 3000); // Show preloader for 3 seconds
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) {
+    return <Preloader />;
+  }
+
   return (
     <div className="flex flex-col min-h-screen">
       <header className="absolute top-0 left-0 right-0 p-4 z-10">
