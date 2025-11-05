@@ -1,9 +1,17 @@
 
 'use client';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { BrainCircuit } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 const Preloader = () => {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    // This effect runs only on the client, after the component has mounted.
+    setIsClient(true);
+  }, []);
+
   return (
     <div className="fixed inset-0 z-50 flex h-screen w-full flex-col items-center justify-center bg-black overflow-hidden">
       <div className="relative flex items-center justify-center w-64 h-64">
@@ -36,8 +44,8 @@ const Preloader = () => {
             className="absolute w-48 h-48 border-2 border-blue-400 rounded-full"
         />
 
-        {/* Floating Particles */}
-        {Array.from({ length: 20 }).map((_, i) => (
+        {/* Floating Particles - Render only on the client */}
+        {isClient && Array.from({ length: 20 }).map((_, i) => (
           <motion.div
             key={i}
             initial={{
