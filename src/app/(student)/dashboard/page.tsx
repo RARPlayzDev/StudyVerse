@@ -1,3 +1,4 @@
+
 'use client';
 import Link from "next/link"
 import {
@@ -35,9 +36,10 @@ import PageTitle from "@/components/common/page-title"
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, query, orderBy, limit, where } from "firebase/firestore"
 import type { Note as NoteType, CollabRoom, Task } from "@/lib/types"
+import Preloader from "@/components/common/preloader";
 
 export default function Dashboard() {
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   
   const notesQuery = useMemoFirebase(() => {
@@ -63,6 +65,10 @@ export default function Dashboard() {
   const { data: recentNotes, isLoading: notesLoading } = useCollection<NoteType>(notesQuery);
   const { data: activeRooms, isLoading: roomsLoading } = useCollection<CollabRoom>(roomsQuery);
   const { data: activeTasks, isLoading: tasksLoading } = useCollection<Task>(tasksQuery);
+
+  if (isUserLoading || (user && (notesLoading || roomsLoading || tasksLoading))) {
+    return <Preloader />;
+  }
 
 
   return (

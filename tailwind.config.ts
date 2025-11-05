@@ -1,4 +1,4 @@
-// Version 1.0 Final Push
+// Version 1.2 Bug Fixes
 import type {Config} from 'tailwindcss';
 
 export default {
